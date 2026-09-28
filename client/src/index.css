@@ -1,0 +1,85 @@
+:root {
+  /* Typography */
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body: 'Source Sans 3', system-ui, -apple-system, sans-serif;
+  --text-display-lg: 2.2rem;
+  --text-display-md: 1.3rem;
+  --leading-display: 1.2;
+  --weight-bold: 700;
+  --text-xs: 0.8rem;
+  --text-sm: 0.85rem;
+  --text-md: 0.9rem;
+  --text-base: 1rem;
+  --weight-regular: 400;
+  --weight-semibold: 600;
+  --leading-body: 1.55;
+
+  /* Spacing (unchanged from Phase 5) */
+  --space-3xs: 2px;
+  --space-2xs: 4px;
+  --space-xs: 6px;
+  --space-sm: 8px;
+  --space-md: 10px;
+  --space-lg: 12px;
+  --space-xl: 16px;
+  --space-2xl: 24px;
+  --space-3xl: 32px;
+  --space-4xl: 64px;
+
+  /* Shape and elevation */
+  --radius-sm: 4px;
+  --radius-pill: 999px;
+  --radius-lg: 20px;
+  --radius-modal: 24px;
+  --rule-width: 1px;
+  --shadow-card: 0 10px 15px -3px rgba(45,58,49,0.06);
+  --shadow-modal: 0 25px 50px -12px rgba(45,58,49,0.25);
+  --z-backdrop: 100;
+  --z-modal: 101;
+  --focus-ring-width: 4px;
+
+  /* Botanical base palette */
+  --color-bg: #F9F8F4;
+  --color-surface: #FFFFFF;
+  --color-surface-soft: #F2F0EB;
+  --color-ink: #2D3A31;
+  --color-ink-muted: #6E655B;
+  --color-stone: #E6E2DA;
+  --color-sage: #8C9A84;
+  --color-terracotta: #C27B66;
+  --color-on-ink: #FFFFFF;
+  --color-backdrop: rgba(45,58,49,0.25);
+  --color-danger-bg: #F7DFD8;
+  --color-danger-fg: #8C2F22;
+  --color-danger-border: #E0A99C;
+
+  /* Migration aliases -- plan 06-02 removes this group */
+  --color-rule: var(--color-stone);
+  --color-rule-soft: var(--color-stone);
+  --color-accent: var(--color-ink);
+  --color-danger: var(--color-danger-fg);
+
+  /* Request-state colours (own/other claim on a hardware set) */
+  --color-claim-own-bg: #E4EBDF;
+  --color-claim-own-fg: #3C5233;
+  --color-claim-own-border: #B9C9AC;
+  --color-claim-other-bg: #F2EDE2;
+  --color-claim-other-fg: #6E655B;
+  --color-claim-other-border: #E7E0D3;
+
+  /* Motion */
+  --motion-fast: 150ms;
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+
+  font-family: var(--font-body);
+  color: var(--color-ink);
+  background-color: var(--color-bg);
+}
+
+body {
+  margin: 0;
+}
+
+* {
+  box-sizing: border-box;
+}

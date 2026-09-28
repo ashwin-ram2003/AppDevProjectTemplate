@@ -1,0 +1,14 @@
+.git/
+.github/
+.planning/
+.claude/
+.gsd/
+**/node_modules/
+**/dist/
+**/__pycache__/
+**/*.pyc
+**/.venv/
+.env
+**/.env
+*.pdf
+*.md

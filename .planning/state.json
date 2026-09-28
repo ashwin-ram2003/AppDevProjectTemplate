@@ -1,0 +1,38 @@
+{
+  "contract": "1.0.0",
+  "flavor": "core",
+  "milestone": null,
+  "phases": [
+    {
+      "number": "1",
+      "name": "(Track A): Account & Household Management",
+      "status": "in_progress"
+    },
+    {
+      "number": "2",
+      "name": "(Track B): Inventory Management",
+      "status": "complete"
+    },
+    {
+      "number": "3",
+      "name": "(Track C): Data Integration & API",
+      "status": "pending"
+    },
+    {
+      "number": "4",
+      "name": "(Track D): Deployment & Quality",
+      "status": "pending"
+    },
+    {
+      "number": "5",
+      "name": "(Track E): UI Design",
+      "status": "complete"
+    }
+  ],
+  "next": {
+    "command": "/gsd:progress --next",
+    "label": "Advance to the next step (plan phase 1)",
+    "reason": "Phase 1 of 5 — needs a plan"
+  },
+  "updated_at": "2026-09-25T02:54:37.837Z"
+}

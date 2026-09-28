@@ -1,0 +1,17 @@
+# Render blueprint. Import this from the Render dashboard (New > Blueprint)
+# and point it at this repository, or create the service by hand with the
+# same settings.
+services:
+  - type: web
+    name: group2-hardware-inventory
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /healthz
+    envVars:
+      # sync: false means Render prompts for the value and stores it as a
+      # secret. The connection string must never be committed here.
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DB
+        value: HaaSResourceManager
