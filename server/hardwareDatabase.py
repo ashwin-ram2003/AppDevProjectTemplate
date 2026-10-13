@@ -1,37 +1,79 @@
-# Import necessary libraries and modules
 from pymongo import MongoClient
 
-'''
-Structure of Hardware Set entry:
-HardwareSet = {
-    'hwName': hwSetName,
-    'capacity': initCapacity,
-    'availability': initCapacity
-}
-'''
+DB_NAME = "HardwareCheckout"
+COLLECTION_NAME = "HardwareSets"
 
-# Function to create a new hardware set
+
 def createHardwareSet(client, hwSetName, initCapacity):
-    # Create a new hardware set in the database
-    pass
+    if not isinstance(hwSetName, str) or not hwSetName.strip():
+        raise ValueError("Hardware name cannot be empty")
 
-# Function to query a hardware set by its name
+    if type(initCapacity) is not int or initCapacity < 0:
+        raise ValueError("Capacity must be a non-negative integer")
+
+    collection = client[DB_NAME][COLLECTION_NAME]
+
+    if collection.find_one({"hwName": hwSetName}):
+        raise ValueError("Hardware set already exists")
+
+    hardware = {
+        "hwName": hwSetName,
+        "capacity": initCapacity,
+        "availability": initCapacity
+    }
+
+    collection.insert_one(hardware)
+    return hardware
+
+
 def queryHardwareSet(client, hwSetName):
-    # Query and return a hardware set from the database
-    pass
+    collection = client[DB_NAME][COLLECTION_NAME]
+    return collection.find_one({"hwName": hwSetName})
 
-# Function to update the availability of a hardware set
+
 def updateAvailability(client, hwSetName, newAvailability):
-    # Update the availability of an existing hardware set
-    pass
+    collection = client[DB_NAME][COLLECTION_NAME]
 
-# Function to request space from a hardware set
+    if type(newAvailability) is not int or newAvailability < 0:
+        raise ValueError("Availability must be a non-negative integer")
+
+    result = collection.update_one(
+        {
+            "hwName": hwSetName,
+            "capacity": {"$gte": newAvailability}
+        },
+        {"$set": {"availability": newAvailability}}
+    )
+
+    if result.matched_count == 0:
+        raise ValueError("Hardware set not found or availability exceeds capacity")
+
+    return queryHardwareSet(client, hwSetName)
+
+
 def requestSpace(client, hwSetName, amount):
-    # Request a certain amount of hardware and update availability
-    pass
+    collection = client[DB_NAME][COLLECTION_NAME]
 
-# Function to get all hardware set names
+    if type(amount) is not int or amount <= 0:
+        raise ValueError("Checkout amount must be a positive integer")
+
+    result = collection.update_one(
+        {
+            "hwName": hwSetName,
+            "availability": {"$gte": amount}
+        },
+        {"$inc": {"availability": -amount}}
+    )
+
+    if result.matched_count == 0:
+        raise ValueError("Hardware set not found or insufficient availability")
+
+    return queryHardwareSet(client, hwSetName)
+
+
 def getAllHwNames(client):
-    # Get and return a list of all hardware set names
-    pass
-
+    collection = client[DB_NAME][COLLECTION_NAME]
+    return [
+        hardware["hwName"]
+        for hardware in collection.find({}, {"hwName": 1})
+    ]
