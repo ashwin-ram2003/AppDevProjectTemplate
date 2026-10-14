@@ -1,7 +1,7 @@
 # Import necessary libraries and modules
 from pymongo import MongoClient
 
-import hardwareDB
+import hardwareDatabase as hardwareDB
 
 '''
 Structure of Project entry:
@@ -17,17 +17,62 @@ Project = {
 # Function to query a project by its ID
 def queryProject(client, projectId):
     # Query and return a project from the database
-    pass
+    db = client["HardwareCheckout"]
+    projects = db["Projects"]
+
+    # matching ID 
+    project = projects.find_one({"projectID" : projectId})
+
+    return project 
+
 
 # Function to create a new project
 def createProject(client, projectName, projectId, description):
     # Create a new project in the database
-    pass
+    db = client["HardwareCheckout"]
+    projects = db["Projects"]
+
+    # check if exists 
+    if queryProject(client, projectId) is not None:
+        return False 
+    
+    # create a new project 
+    project = {
+        "projectName": projectName,
+        "projectId": projectId,
+        "description": description,
+        "hwSets": {},
+        "users": []
+    }
+
+    # insert project 
+    projects.insert_one(project)
+
+    return True 
 
 # Function to add a user to a project
 def addUser(client, projectId, userId):
-    # Add a user to the specified project
-    pass
+    # add user 
+    db = client["HardwareCheckout"]
+    projects = db["Projects"]
+
+    # find project 
+    project = queryProject(client, projectId)
+
+    if project is None:
+        return False
+
+    # is user alr in project 
+    if userId in project["users"]:
+        return False
+
+    # add project to list 
+    projects.update_one(
+        {"projectId": projectId},
+        {"$push": {"users": userId}}
+    )
+
+    return True
 
 # Function to update hardware usage in a project
 def updateUsage(client, projectId, hwSetName):
