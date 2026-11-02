@@ -7,6 +7,8 @@ vi.mock('../api/hardware.js', () => ({
   checkinHardware: vi.fn(),
   checkoutHardware: vi.fn(),
   createHardwareSet: vi.fn(),
+  renameHardwareSet: vi.fn(),
+  setHardwareSetActive: vi.fn(),
 }));
 
 import { checkinHardware, checkoutHardware, createHardwareSet, fetchHardware } from '../api/hardware.js';
@@ -515,5 +517,63 @@ describe('ResourceView', () => {
 
     rerender(<ResourceView projectId="P2" userId="bob" />);
     await waitFor(() => expect(fetchHardware).toHaveBeenCalledWith('P2', 'bob'));
+  });
+});
+
+describe('inactive hardware set state', () => {
+  const activeSet = { hwSetName: 'HWSet1', capacity: 10, available: 5, myCheckedOut: 2 };
+
+  it('QuantityAction with disabled disables input and button even when max is above 0', () => {
+    render(
+      <QuantityAction
+        label="Check Out"
+        busyLabel="Checking out..."
+        action={vi.fn()}
+        describeError={(error) => error.message}
+        onChanged={vi.fn()}
+        max={5}
+        disabled
+      />,
+    );
+    expect(screen.getByRole('spinbutton')).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Check Out' })).toBeDisabled();
+  });
+
+  it('CheckOut explains a hardware_set_inactive rejection', async () => {
+    checkoutHardware.mockRejectedValue(new Error('hardware_set_inactive'));
+    render(
+      <CheckOut projectId="P1" userId="alice" hwSetName="HWSet1" available={5} onChanged={vi.fn()} />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Check Out' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      "This hardware set is deactivated, so it can't be checked out.",
+    );
+  });
+
+  it('HardwareSet with active false shows the badge and note, disables Check Out, keeps Check In', () => {
+    render(
+      <HardwareSet
+        projectId="P1"
+        userId="alice"
+        hwSet={{ ...activeSet, active: false }}
+        onChanged={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('Inactive')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Deactivated -- no new check-outs. Units already out can still be checked in.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Check Out' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Check In' })).toBeEnabled();
+  });
+
+  it.each([[{ active: true }], [{}]])('HardwareSet with %o shows no badge and enables Check Out', (extra) => {
+    render(
+      <HardwareSet projectId="P1" userId="alice" hwSet={{ ...activeSet, ...extra }} onChanged={vi.fn()} />,
+    );
+    expect(screen.queryByText('Inactive')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Check Out' })).toBeEnabled();
   });
 });

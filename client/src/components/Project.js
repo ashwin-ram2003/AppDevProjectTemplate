@@ -79,7 +79,7 @@ export default function ResourceView({ projectId, userId }) {
         <div className="hw-set-list">
           {hardwareSets.map((hwSet) => (
             <HardwareSet
-              key={hwSet.hwSetName}
+              key={hwSet._id ?? hwSet.hwSetName}
               projectId={projectId}
               userId={userId}
               hwSet={hwSet}

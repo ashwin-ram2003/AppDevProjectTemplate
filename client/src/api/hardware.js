@@ -58,6 +58,14 @@ export async function createHardwareSet(payload) {
   return postJson('/api/hardware/create', payload);
 }
 
+export async function renameHardwareSet(payload) {
+  return postJson('/api/hardware/rename', payload);
+}
+
+export async function setHardwareSetActive(payload) {
+  return postJson('/api/hardware/set_active', payload);
+}
+
 export async function checkinHardware(payload) {
   return postJson('/api/hardware/checkin', payload);
 }

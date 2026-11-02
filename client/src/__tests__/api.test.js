@@ -4,7 +4,9 @@ import {
   checkoutHardware,
   fetchHardware,
   releaseRequest,
+  renameHardwareSet,
   requestHardware,
+  setHardwareSetActive,
 } from '../api/hardware.js';
 
 function jsonResponse(status, body) {
@@ -111,6 +113,8 @@ describe('mutating calls', () => {
     ['checkoutHardware', checkoutHardware, '/api/hardware/checkout'],
     ['requestHardware', requestHardware, '/api/hardware/request'],
     ['releaseRequest', releaseRequest, '/api/hardware/release'],
+    ['renameHardwareSet', renameHardwareSet, '/api/hardware/rename'],
+    ['setHardwareSetActive', setHardwareSetActive, '/api/hardware/set_active'],
   ])('%s POSTs the JSON payload to %s and returns the body', async (_name, call, path) => {
     fetch.mockResolvedValue(jsonResponse(200, { hardwareSet: { hwSetName: 'HWSet1' } }));
 

@@ -23,13 +23,23 @@ import { useState } from 'react';
  *   max is below 1, there is nothing valid to submit, so the control is
  *   disabled outright rather than left stuck between an unreachable
  *   min="1" and max.
+ * @param {boolean} [props.disabled] - Disables the input and button
+ *   regardless of max (e.g. a deactivated hardware set). Omitted = no effect.
  */
-export default function QuantityAction({ label, busyLabel, action, describeError, onChanged, max }) {
+export default function QuantityAction({
+  label,
+  busyLabel,
+  action,
+  describeError,
+  onChanged,
+  max,
+  disabled = false,
+}) {
   const [quantity, setQuantity] = useState('1');
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
 
-  const nothingToDo = typeof max === 'number' && max < 1;
+  const nothingToDo = disabled || (typeof max === 'number' && max < 1);
 
   async function handleSubmit(event) {
     event.preventDefault();
