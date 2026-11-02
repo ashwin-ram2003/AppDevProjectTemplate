@@ -1,13 +1,17 @@
 # Import necessary libraries and modules
 from pymongo import MongoClient
+from pymongo.errors import DuplicateKeyError
 
 import hardwareDatabase as hardwareDB
 
 '''
-Structure of Project entry:
+Structure of Project entry (collection `Households` -- see
+hardwareDB.PROJECTS_COLLECTION; name kept from an earlier domain
+iteration, every field below is project vocabulary):
+
 Project = {
+    'householdId': projectId,   # stored field name; wire name is projectId
     'projectName': projectName,
-    'projectId': projectId,
     'description': description,
     'users': [user1, user2, ...]
 }
@@ -19,20 +23,123 @@ docstring: it now lives in the separate `HardwareSets` collection
 assertProjectMember below.
 '''
 
-# Function to query a project by its ID
-def queryProject(client, projectId):
-    # Query and return a project from the database
-    pass
-
-# Function to create a new project
-def createProject(client, projectName, projectId, description):
-    # Create a new project in the database
-    pass
 
 class ProjectNotFoundError(Exception):
     """Raised when projectId does not match any existing project. Maps to
     HTTP 404.
     """
+
+
+class ProjectAlreadyExistsError(Exception):
+    """Raised by createProject when projectId is already taken. Maps to
+    HTTP 409.
+    """
+
+
+class InvalidProjectInput(Exception):
+    """Raised when a project field is missing or the wrong type. Maps to
+    HTTP 400; the message carries the offending field name.
+
+    Type-checking (not just presence) matters here for the same reason it
+    does in assertProjectMember below: request.get_json() decodes
+    arbitrary JSON, and an unvalidated dict value passed into a Mongo
+    filter could be interpreted as a query operator instead of a literal
+    match.
+    """
+
+
+def _serializeProject(doc):
+    """Strip Mongo's _id and rename the stored householdId field to the
+    wire name projectId.
+    """
+    return {
+        "projectId": doc["householdId"],
+        "projectName": doc.get("projectName", ""),
+        "description": doc.get("description", ""),
+        "users": doc.get("users", []),
+    }
+
+
+def _ensureProjectUniqueIndex(collection):
+    """Create the unique index backing createProject's insert.
+
+    Without this, two concurrent createProject calls for the same
+    projectId could both pass the "does it already exist" read and both
+    insert -- the same race createHardwareSet's own unique index guards
+    against (see hardwareDatabase.py's _ensureHwSetUniqueIndex).
+    create_index is idempotent, so calling it on every createProject is
+    safe and needs no separate migration step.
+    """
+    collection.create_index("householdId", unique=True, name="uniq_householdId")
+
+
+# Function to query a project by its ID
+def queryProject(client, projectId):
+    """Return the project identified by projectId as a serialized dict, or
+    None if no such project exists.
+
+    Raises InvalidProjectInput if projectId is not a non-empty string.
+    """
+    if not isinstance(projectId, str) or not projectId:
+        raise InvalidProjectInput("projectId")
+
+    db = client[hardwareDB.DB_NAME]
+    doc = db[hardwareDB.PROJECTS_COLLECTION].find_one({"householdId": projectId})
+    return _serializeProject(doc) if doc is not None else None
+
+
+# Function to create a new project
+def createProject(client, projectName, projectId, description, creatorUserId):
+    """Create a new project (US-03), with creatorUserId as its first
+    member so its creator can use it immediately without a separate join.
+
+    Raises InvalidProjectInput if any field is missing or the wrong type,
+    or ProjectAlreadyExistsError if projectId is already taken.
+    """
+    fields = {
+        "projectName": projectName,
+        "projectId": projectId,
+        "description": description,
+        "creatorUserId": creatorUserId,
+    }
+    for field, value in fields.items():
+        if not isinstance(value, str) or not value:
+            raise InvalidProjectInput(field)
+
+    db = client[hardwareDB.DB_NAME]
+    collection = db[hardwareDB.PROJECTS_COLLECTION]
+    _ensureProjectUniqueIndex(collection)
+
+    doc = {
+        "householdId": projectId,
+        "projectName": projectName,
+        "description": description,
+        "users": [creatorUserId],
+    }
+    try:
+        collection.insert_one(doc)
+    except DuplicateKeyError:
+        raise ProjectAlreadyExistsError(projectId)
+
+    return _serializeProject(doc)
+
+
+# Function to return every project a user belongs to
+def getUserProjects(client, userId):
+    """Return every project userId belongs to (US-05), as serialized
+    dicts ordered by projectId for a stable list across repeated calls.
+
+    Raises InvalidProjectInput if userId is not a non-empty string.
+    """
+    if not isinstance(userId, str) or not userId:
+        raise InvalidProjectInput("userId")
+
+    db = client[hardwareDB.DB_NAME]
+    docs = db[hardwareDB.PROJECTS_COLLECTION].find({"users": userId})
+    return sorted(
+        (_serializeProject(doc) for doc in docs),
+        key=lambda project: project["projectId"],
+    )
 
 
 # Function to add a user to a project
@@ -129,6 +236,16 @@ def assertProjectMember(client, projectId, userId):
 
 # Backward-compatible alias -- older call sites/tests may still import this name.
 assertHouseholdMember = assertProjectMember
+
+
+def createHardwareSet(client, projectId, userId, hwSetName, capacity):
+    """Create a hardware set with a fixed starting capacity after verifying
+    project membership. Idempotent if the set already exists -- see
+    hardwareDB.createHardwareSet's docstring; capacity is never overwritten
+    by a repeat call.
+    """
+    assertProjectMember(client, projectId, userId)
+    return hardwareDB.createHardwareSet(client, projectId, hwSetName, capacity)
 
 
 def checkinHardwareSet(client, projectId, userId, hwSetName, quantity):

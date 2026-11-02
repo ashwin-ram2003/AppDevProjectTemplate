@@ -37,3 +37,18 @@ async function postJson(path, payload) {
 export async function joinProject({ projectId, userId }) {
   return postJson('/join_project', { projectId, userId });
 }
+
+// US-03 -- create a new project with userId as its first member.
+export async function createProject({ projectId, projectName, description, userId }) {
+  return postJson('/create_project', { projectId, projectName, description, userId });
+}
+
+// US-05 -- every project userId belongs to.
+export async function getUserProjects({ userId }) {
+  return postJson('/get_user_projects_list', { userId });
+}
+
+// Project name/description for one project, gated by membership.
+export async function getProjectInfo({ projectId, userId }) {
+  return postJson('/get_project_info', { projectId, userId });
+}

@@ -21,6 +21,12 @@ ROUTES = [
     ("GET", "/api/hardware", {"projectId": "H1", "userId": "alice"}, "missing_parameter"),
     (
         "POST",
+        "/api/hardware/create",
+        {"projectId": "H1", "userId": "alice", "hwSetName": "NewSet", "capacity": 10},
+        "invalid_input",
+    ),
+    (
+        "POST",
         "/api/hardware/checkin",
         {"projectId": "H1", "userId": "alice", "hwSetName": "HWSet1", "quantity": 1},
         "invalid_input",
