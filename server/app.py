@@ -233,47 +233,94 @@ def add_user():
     # Return a JSON response (never echo the password back, hashed or not)
     return jsonify({"username": username, "userId": userId}), 201
 
-# Route for getting the list of user projects
+# Route for getting the list of user projects (US-05)
 @app.route('/get_user_projects_list', methods=['POST'])
 def get_user_projects_list():
     # Extract data from request
+    body = request.get_json(silent=True) or {}
+    userId = body.get('userId')
+
+    if not userId:
+        return jsonify({"error": "invalid_input", "field": "userId"}), 400
 
     # Connect to MongoDB
+    client = getMongoClient()
 
-    # Fetch the user's projects using the usersDB module
-
-    # Close the MongoDB connection
+    try:
+        # Fetch the user's projects using the usersDB module
+        projects = usersDB.getUserProjectsList(client, userId)
+    finally:
+        # Close the MongoDB connection
+        client.close()
 
     # Return a JSON response
-    return jsonify({})
+    return jsonify({"projects": projects}), 200
 
-# Route for creating a new project
+# Route for creating a new project (US-03)
 @app.route('/create_project', methods=['POST'])
 def create_project():
     # Extract data from request
+    body = request.get_json(silent=True) or {}
+    projectName = body.get('projectName')
+    projectId = body.get('projectId')
+    description = body.get('description')
+    userId = body.get('userId')
+
+    if not projectName:
+        return jsonify({"error": "invalid_input", "field": "projectName"}), 400
+    if not projectId:
+        return jsonify({"error": "invalid_input", "field": "projectId"}), 400
+    if not description:
+        return jsonify({"error": "invalid_input", "field": "description"}), 400
+    if not userId:
+        return jsonify({"error": "invalid_input", "field": "userId"}), 400
 
     # Connect to MongoDB
+    client = getMongoClient()
 
-    # Attempt to create the project using the projectsDB module
-
-    # Close the MongoDB connection
+    try:
+        # Attempt to create the project using the projectsDB module
+        project = projectsDB.createProject(client, projectName, projectId, description, userId)
+    except projectsDB.InvalidProjectInput as error:
+        return jsonify({"error": "invalid_input", "field": str(error)}), 400
+    except projectsDB.ProjectAlreadyExistsError:
+        return jsonify({"error": "project_already_exists", "field": "projectId"}), 409
+    finally:
+        # Close the MongoDB connection
+        client.close()
 
     # Return a JSON response
-    return jsonify({})
+    return jsonify({"project": project}), 201
 
 # Route for getting project information
 @app.route('/get_project_info', methods=['POST'])
 def get_project_info():
     # Extract data from request
+    body = request.get_json(silent=True) or {}
+    projectId = body.get('projectId')
+    userId = body.get('userId')
+
+    if not projectId:
+        return jsonify({"error": "invalid_input", "field": "projectId"}), 400
+    if not userId:
+        return jsonify({"error": "invalid_input", "field": "userId"}), 400
 
     # Connect to MongoDB
+    client = getMongoClient()
 
-    # Fetch project information using the projectsDB module
-
-    # Close the MongoDB connection
+    try:
+        # Fetch project information using the projectsDB module, after
+        # confirming the caller actually belongs to it
+        projectsDB.assertProjectMember(client, projectId, userId)
+        project = projectsDB.queryProject(client, projectId)
+    except projectsDB.NotAHouseholdMemberError:
+        return jsonify({"error": "not_a_project_member"}), 403
+    finally:
+        # Close the MongoDB connection
+        client.close()
 
     # Return a JSON response
-    return jsonify({})
+    return jsonify({"project": project}), 200
 
 # Route for viewing a project's hardware-set status (capacity/availability)
 @app.route('/api/hardware', methods=['GET'])
@@ -305,6 +352,38 @@ def get_hardware_status():
 
     # Return a JSON response
     return jsonify({"projectId": projectId, "hardwareSets": hardwareSets})
+
+# Route for creating a new hardware set with a starting capacity
+@app.route('/api/hardware/create', methods=['POST'])
+def create_hardware_set():
+    # Extract data from request
+    body = request.get_json(silent=True) or {}
+    projectId = body.get('projectId')
+    userId = body.get('userId')
+    hwSetName = body.get('hwSetName')
+    capacity = body.get('capacity')
+
+    if not projectId:
+        return jsonify({"error": "invalid_input", "field": "projectId"}), 400
+    if not userId:
+        return jsonify({"error": "invalid_input", "field": "userId"}), 400
+
+    # Connect to MongoDB
+    client = getMongoClient()
+
+    try:
+        # Attempt to create the hardware set using the projectsDB module
+        hardwareSet = projectsDB.createHardwareSet(client, projectId, userId, hwSetName, capacity)
+    except projectsDB.NotAHouseholdMemberError:
+        return jsonify({"error": "not_a_project_member"}), 403
+    except hardwareDB.InvalidInventoryInput as error:
+        return jsonify({"error": "invalid_input", "field": str(error)}), 400
+    finally:
+        # Close the MongoDB connection
+        client.close()
+
+    # Return a JSON response
+    return jsonify({"hardwareSet": hardwareSet}), 201
 
 # Route for checking in units of a hardware set
 @app.route('/api/hardware/checkin', methods=['POST'])

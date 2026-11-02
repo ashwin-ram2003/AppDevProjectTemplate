@@ -29,19 +29,19 @@ npm run dev
 Then open http://localhost:5173.
 
 - **Configuration:** the server reads `MONGODB_URI` from the environment. Alternatively, put `MONGODB_URI=...` in `server/.env` (gitignored).
-- **Seed data:** login and project management are not built yet, so the client hardcodes project `P1` and user `alice` (`client/src/App.js`). Hardware sets are no longer created by checking in, so a fresh database needs the project and its sets seeded:
-  ```bash
-  cd server && source venv/bin/activate && python3 -c "
-  from pymongo import MongoClient
-  import hardwareDatabase as h
-  c = MongoClient('mongodb://127.0.0.1:27117/')
-  c[h.DB_NAME][h.PROJECTS_COLLECTION].update_one(
-      {'householdId':'P1'},
-      {'\$setOnInsert':{'householdId':'P1','projectName':'Demo','users':['alice']}}, upsert=True)
-  h.createHardwareSet(c, 'P1', 'HWSet1', 10)
-  h.createHardwareSet(c, 'P1', 'HWSet2', 20)"
-  ```
-  Each set has a fixed capacity; Check Out and Check In only change availability. The projects collection is still named `Households` with a `householdId` field, left over from an earlier iteration of the project.
+- **Seed data:** sign up (or sign in) in the browser, then from the project picker either create a new project or join an existing one by ID (see [AUTH.md](AUTH.md)). Once you're in a project, use the "Add a hardware set" form on the resource view to give it its first hardware set(s) with a starting capacity -- no manual database script needed anymore. Each set has a fixed capacity; Check Out and Check In only change availability. The projects collection is still named `Households` with a `householdId` field, left over from an earlier iteration of the project.
+  - If you'd rather seed data directly (e.g. for a quick demo without clicking through forms), the same thing is still possible from a script:
+    ```bash
+    cd server && source venv/bin/activate && python3 -c "
+    from pymongo import MongoClient
+    import hardwareDatabase as h
+    c = MongoClient('mongodb://127.0.0.1:27117/')
+    c[h.DB_NAME][h.PROJECTS_COLLECTION].update_one(
+        {'householdId':'P1'},
+        {'\$setOnInsert':{'householdId':'P1','projectName':'Demo','users':['alice']}}, upsert=True)
+    h.createHardwareSet(c, 'P1', 'HWSet1', 10)
+    h.createHardwareSet(c, 'P1', 'HWSet2', 20)"
+    ```
 - **Port already in use:** check what is running with `lsof -i :27117 -i :5050 -i :5173`.
 - **Tests:** `cd server && source venv/bin/activate && pytest`.
 

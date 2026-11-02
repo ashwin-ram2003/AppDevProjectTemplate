@@ -6,14 +6,16 @@ vi.mock('../api/hardware.js', () => ({
   fetchHardware: vi.fn(),
   checkinHardware: vi.fn(),
   checkoutHardware: vi.fn(),
+  createHardwareSet: vi.fn(),
 }));
 
-import { checkinHardware, checkoutHardware, fetchHardware } from '../api/hardware.js';
+import { checkinHardware, checkoutHardware, createHardwareSet, fetchHardware } from '../api/hardware.js';
 import Availability from '../components/Availability.js';
 import Capacity from '../components/Capacity.js';
 import MyCheckedOut from '../components/MyCheckedOut.js';
 import CheckIn from '../components/CheckIn.js';
 import CheckOut from '../components/CheckOut.js';
+import CreateHardwareSet from '../components/CreateHardwareSet.js';
 import HardwareSet from '../components/HardwareSet.js';
 import QuantityAction from '../components/QuantityAction.js';
 import ResourceView from '../components/Project.js';
@@ -349,6 +351,78 @@ describe('HardwareSet', () => {
   });
 });
 
+describe('CreateHardwareSet', () => {
+  it('submits the name and starting capacity, scoped to this project and user', async () => {
+    createHardwareSet.mockResolvedValue({ hardwareSet: { hwSetName: 'NewSet', capacity: 10 } });
+    const onCreated = vi.fn().mockResolvedValue();
+    render(<CreateHardwareSet projectId="P1" userId="alice" onCreated={onCreated} />);
+
+    await userEvent.type(screen.getByLabelText('Name'), 'NewSet');
+    await userEvent.type(screen.getByLabelText('Starting capacity'), '10');
+    await userEvent.click(screen.getByRole('button', { name: 'Add hardware set' }));
+
+    expect(createHardwareSet).toHaveBeenCalledWith({
+      projectId: 'P1',
+      userId: 'alice',
+      hwSetName: 'NewSet',
+      capacity: 10,
+    });
+    expect(onCreated).toHaveBeenCalledTimes(1);
+  });
+
+  it('clears the form after a successful create', async () => {
+    createHardwareSet.mockResolvedValue({ hardwareSet: { hwSetName: 'NewSet', capacity: 10 } });
+    render(<CreateHardwareSet projectId="P1" userId="alice" onCreated={vi.fn().mockResolvedValue()} />);
+
+    await userEvent.type(screen.getByLabelText('Name'), 'NewSet');
+    await userEvent.type(screen.getByLabelText('Starting capacity'), '10');
+    await userEvent.click(screen.getByRole('button', { name: 'Add hardware set' }));
+
+    await waitFor(() => expect(screen.getByLabelText('Name')).toHaveValue(''));
+    expect(screen.getByLabelText('Starting capacity')).toHaveValue(null);
+  });
+
+  it('shows a friendly message and does not clear the form when the server rejects the capacity', async () => {
+    // A value that passes the input's own min="1" constraint (so the
+    // native submit isn't blocked before this component's handler runs)
+    // but that the server rejects anyway -- e.g. a second tab racing a
+    // capacity that's since been invalidated some other way.
+    const error = new Error('invalid_input');
+    error.field = 'capacity';
+    createHardwareSet.mockRejectedValue(error);
+    const onCreated = vi.fn();
+    render(<CreateHardwareSet projectId="P1" userId="alice" onCreated={onCreated} />);
+
+    await userEvent.type(screen.getByLabelText('Name'), 'NewSet');
+    await userEvent.type(screen.getByLabelText('Starting capacity'), '5');
+    await userEvent.click(screen.getByRole('button', { name: 'Add hardware set' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Starting capacity must be a whole number of 1 or more.'
+    );
+    expect(onCreated).not.toHaveBeenCalled();
+    expect(screen.getByLabelText('Name')).toHaveValue('NewSet');
+  });
+
+  it('disables the submit button while the request is in flight', async () => {
+    let resolveCreate;
+    createHardwareSet.mockReturnValue(
+      new Promise((resolve) => {
+        resolveCreate = resolve;
+      })
+    );
+    render(<CreateHardwareSet projectId="P1" userId="alice" onCreated={vi.fn().mockResolvedValue()} />);
+
+    await userEvent.type(screen.getByLabelText('Name'), 'NewSet');
+    await userEvent.type(screen.getByLabelText('Starting capacity'), '10');
+    await userEvent.click(screen.getByRole('button', { name: 'Add hardware set' }));
+
+    expect(screen.getByRole('button', { name: 'Adding...' })).toBeDisabled();
+    resolveCreate({ hardwareSet: { hwSetName: 'NewSet', capacity: 10 } });
+    await screen.findByRole('button', { name: 'Add hardware set' });
+  });
+});
+
 describe('ResourceView', () => {
   const sets = [
     { hwSetName: 'HWSet1', capacity: 10, available: 10 },
@@ -365,11 +439,33 @@ describe('ResourceView', () => {
     expect(fetchHardware).toHaveBeenCalledWith('P1', 'alice');
   });
 
-  it('says so when the project has no hardware sets', async () => {
+  it('says so when the project has no hardware sets, but still offers the create form', async () => {
     fetchHardware.mockResolvedValue({ hardwareSets: [] });
     render(<ResourceView projectId="P1" userId="alice" />);
 
     expect(await screen.findByText('No hardware sets in this project yet.')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Add a hardware set' })).toBeInTheDocument();
+  });
+
+  it('creating a hardware set reloads the list', async () => {
+    fetchHardware
+      .mockResolvedValueOnce({ hardwareSets: [] })
+      .mockResolvedValueOnce({ hardwareSets: [{ hwSetName: 'NewSet', capacity: 10, available: 10 }] });
+    createHardwareSet.mockResolvedValue({ hardwareSet: { hwSetName: 'NewSet', capacity: 10 } });
+    render(<ResourceView projectId="P1" userId="alice" />);
+    await screen.findByText('No hardware sets in this project yet.');
+
+    await userEvent.type(screen.getByLabelText('Name'), 'NewSet');
+    await userEvent.type(screen.getByLabelText('Starting capacity'), '10');
+    await userEvent.click(screen.getByRole('button', { name: 'Add hardware set' }));
+
+    expect(await screen.findByRole('region', { name: 'NewSet' })).toBeInTheDocument();
+    expect(createHardwareSet).toHaveBeenCalledWith({
+      projectId: 'P1',
+      userId: 'alice',
+      hwSetName: 'NewSet',
+      capacity: 10,
+    });
   });
 
   it('treats a response without hardwareSets as empty', async () => {

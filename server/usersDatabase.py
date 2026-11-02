@@ -88,5 +88,10 @@ def joinProject(client, userId, projectId):
 
 # Function to get the list of projects for a user
 def getUserProjectsList(client, userId):
-    # Get and return the list of projects a user is part of
-    pass
+    """Return every project userId belongs to (US-05).
+
+    Delegates to projectsDatabase -- a project's own `users` list is the
+    source of truth for membership, not a field on the user document
+    (see projectsDatabase.py's module docstring and addUser above).
+    """
+    return projectsDB.getUserProjects(client, userId)

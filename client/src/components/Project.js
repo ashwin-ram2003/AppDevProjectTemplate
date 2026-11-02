@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { fetchHardware } from '../api/hardware.js';
+import CreateHardwareSet from './CreateHardwareSet.js';
 import HardwareSet from './HardwareSet.js';
 
 /**
@@ -69,21 +70,24 @@ export default function ResourceView({ projectId, userId }) {
 
   const hardwareSets = hardware ? hardware.hardwareSets : [];
 
-  if (hardwareSets.length === 0) {
-    return <p className="muted-text">No hardware sets in this project yet.</p>;
-  }
-
   return (
-    <div className="hw-set-list">
-      {hardwareSets.map((hwSet) => (
-        <HardwareSet
-          key={hwSet.hwSetName}
-          projectId={projectId}
-          userId={userId}
-          hwSet={hwSet}
-          onChanged={loadHardware}
-        />
-      ))}
+    <div>
+      <CreateHardwareSet projectId={projectId} userId={userId} onCreated={loadHardware} />
+      {hardwareSets.length === 0 ? (
+        <p className="muted-text">No hardware sets in this project yet.</p>
+      ) : (
+        <div className="hw-set-list">
+          {hardwareSets.map((hwSet) => (
+            <HardwareSet
+              key={hwSet.hwSetName}
+              projectId={projectId}
+              userId={userId}
+              hwSet={hwSet}
+              onChanged={loadHardware}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

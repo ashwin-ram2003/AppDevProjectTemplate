@@ -37,6 +37,10 @@ h3 {
   gap: var(--space-xl);
 }
 
+.create-hw-set {
+  margin: 0 0 var(--space-2xl);
+}
+
 .hw-set {
   padding: var(--space-xl);
   background-color: var(--color-surface);
@@ -221,9 +225,50 @@ h3 {
   cursor: pointer;
 }
 
-.app-session__join-error {
-  margin: 0 0 var(--space-xl);
-  font-size: var(--text-sm);
+.app-back-to-projects {
+  display: inline-block;
+  margin-bottom: var(--space-xl);
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--color-ink);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.projects-page__list {
+  display: grid;
+  gap: var(--space-lg);
+  margin: 0 0 var(--space-2xl);
+  padding: 0;
+  list-style: none;
+}
+
+.projects-page__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-lg);
+  padding: var(--space-lg);
+  background-color: var(--color-surface);
+  border: var(--rule-width) solid var(--color-stone);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.projects-page__item button {
+  padding: var(--space-xs) var(--space-lg);
+  background-color: var(--color-surface);
+  color: var(--color-ink);
+  border: var(--rule-width) solid var(--color-rule);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  transition: border-color var(--motion-fast) var(--ease-out);
+}
+
+.projects-page__item button:hover {
+  border-color: var(--color-accent);
 }
 
 @media (max-width: 599px) {

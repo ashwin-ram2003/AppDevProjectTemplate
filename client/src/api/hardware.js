@@ -54,6 +54,10 @@ async function postJson(path, payload) {
   return response.json();
 }
 
+export async function createHardwareSet(payload) {
+  return postJson('/api/hardware/create', payload);
+}
+
 export async function checkinHardware(payload) {
   return postJson('/api/hardware/checkin', payload);
 }
