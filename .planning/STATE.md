@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-28)
 Phase: 1 — Account & Project Management
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-09-28 — domain reverted to generic HaaS/hardware-resource per assignment spec
+Last activity: 2026-11-02 - Completed quick task 261102-150: US-14 hardware-set rename and deactivate
 
 Progress: [█████░░░░░] 25% (1/4 tracks complete)
 
@@ -104,6 +104,7 @@ Items acknowledged and deferred at milestone close, most recent first:
 | 260914-glw | 2026-09-14 | Add Phase column (assignment grading Phase 1/2) to all WORK-ITEMS.md tables and insert one new Phase-1 scope/schema/stories technical-debt item per track | `.planning/quick/260914-glw-add-phase-column-to-work-items-md-and-3-/SUMMARY.md` |
 | 260914-pzo | 2026-09-14 | Restructure from 3 tracks to 4 tracks (4 developers), split Track C into Track C + Track D, add 4 rubric-story items and 2 promoted stretch-feature stories | `.planning/quick/260914-pzo-restructure-3-tracks-into-4-tracks-4-dev/SUMMARY.md` |
 | 261005-q3t | 2026-10-05 | Per-hardware-set Availability/Capacity/Check In/Check Out components; capacity fixed, over-checkout/over-checkin rejected | `.planning/quick/261005-q3t-per-hwset-checkout-components-and-fix-ca/261005-q3t-SUMMARY.md` |
+| 261102-150 | 2026-11-02 | US-14 / STRETCH-02 (Track C): hardware-set rename, deactivate and reactivate, server + client + tests (346 backend, 126 client passing) | `.planning/quick/261102-150-us-14-finish-hardware-set-rename-and-dea/261102-150-SUMMARY.md` |
 
 ## Session Continuity
 
