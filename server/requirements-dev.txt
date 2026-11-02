@@ -1,0 +1,4 @@
+# Test-only tooling, kept out of requirements.txt so the deploy image
+# doesn't ship it. Install both for local test runs and in CI:
+#   pip install -r requirements.txt -r requirements-dev.txt
+pytest-cov==5.0.0

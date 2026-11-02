@@ -1,0 +1,23 @@
+server/.venv/
+__pycache__/
+*.pyc
+client/node_modules/
+client/dist/
+.env
+
+# GSD local session/runtime bookkeeping (process-scoped, not project state)
+.gsd/
+.planning/milestone.lock
+
+# Exported PDF versions of planning docs (source docs are what matter, not their PDF exports)
+.planning/*.pdf
+
+server/venv/
+server/.mongo-data/
+
+# Coverage output from `pytest --cov`
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.pytest_cache/

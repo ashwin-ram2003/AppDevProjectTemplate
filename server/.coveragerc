@@ -1,0 +1,18 @@
+# Coverage settings for the backend suite (TD-09). CI runs
+# `python -m pytest --cov` from server/, which picks this file up.
+[run]
+source = .
+branch = True
+omit =
+    tests/*
+    venv/*
+    .venv/*
+
+[report]
+show_missing = True
+skip_empty = True
+# CI fails below this line. It sits well under where the suite is today
+# (95%) so ordinary refactors don't trip it, but a large feature merged
+# with no tests at all will. Raise it as coverage grows; don't lower it to
+# get a red PR through.
+fail_under = 85

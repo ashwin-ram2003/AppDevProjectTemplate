@@ -1,5 +1,50 @@
 # AppDevProjectTemplate
 Template for MIS385N (Advanced Programming and App Development) Team Project
+
+[![CI](https://github.com/aa-phan/Group_2_Monday/actions/workflows/ci.yml/badge.svg)](https://github.com/aa-phan/Group_2_Monday/actions/workflows/ci.yml)
+
+Every pull request runs the backend and client test suites, a client build, and a build and boot of the deploy image ([ci.yml](.github/workflows/ci.yml)). See [TESTING.md](TESTING.md) and [DEPLOY.md](DEPLOY.md).
+
+# Running Locally
+
+You need three processes: MongoDB, the Flask backend, and the React client. From the repo root:
+
+```bash
+# 1. MongoDB (leave running; port 27117)
+mkdir -p server/.mongo-data
+mongod --dbpath server/.mongo-data --port 27117 --bind_ip 127.0.0.1
+
+# 2. Flask backend (new terminal; port 5050)
+cd server
+python3 -m venv venv && source venv/bin/activate   # first time only
+pip install -r requirements.txt                      # first time only
+MONGODB_URI="mongodb://127.0.0.1:27117/" python app.py
+
+# 3. React client (new terminal; port 5173, proxies /api to 5050)
+cd client
+npm install                                          # first time only
+npm run dev
+```
+
+Then open http://localhost:5173.
+
+- **Configuration:** the server reads `MONGODB_URI` from the environment. Alternatively, put `MONGODB_URI=...` in `server/.env` (gitignored).
+- **Seed data:** sign up (or sign in) in the browser, then from the project picker either create a new project or join an existing one by ID (see [AUTH.md](AUTH.md)). Once you're in a project, use the "Add a hardware set" form on the resource view to give it its first hardware set(s) with a starting capacity -- no manual database script needed anymore. Each set has a fixed capacity; Check Out and Check In only change availability. The projects collection is still named `Households` with a `householdId` field, left over from an earlier iteration of the project.
+  - If you'd rather seed data directly (e.g. for a quick demo without clicking through forms), the same thing is still possible from a script:
+    ```bash
+    cd server && source venv/bin/activate && python3 -c "
+    from pymongo import MongoClient
+    import hardwareDatabase as h
+    c = MongoClient('mongodb://127.0.0.1:27117/')
+    c[h.DB_NAME][h.PROJECTS_COLLECTION].update_one(
+        {'householdId':'P1'},
+        {'\$setOnInsert':{'householdId':'P1','projectName':'Demo','users':['alice']}}, upsert=True)
+    h.createHardwareSet(c, 'P1', 'HWSet1', 10)
+    h.createHardwareSet(c, 'P1', 'HWSet2', 20)"
+    ```
+- **Port already in use:** check what is running with `lsof -i :27117 -i :5050 -i :5173`.
+- **Tests:** `cd server && source venv/bin/activate && pytest`.
+
 # Project Overview
 
 This project is a web application built using Flask and MongoDB, and React. The application manages users, projects, and hardware sets, allowing users to log in, join projects, and request hardware. The backend consists of four main Python files that handle different aspects of the application's functionality.

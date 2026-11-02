@@ -1,0 +1,43 @@
+[
+  {
+    "timestamp": "2026-10-06T23:18:06.255498+00:00",
+    "commit": "cb74515669c52e12c7a6f207e62ad09401947ee9",
+    "testsAfterCommit": "3112cbeb1424b35d62eae48d46e65bee5c899c5f",
+    "publishedTag": null,
+    "scope": "hardware inventory system (server/hardwareDatabase.py, projectsDatabase.py, hardware routes in app.py) and frontend (client/src api + components)",
+    "tool": "local mutation-probe stand-in (nix unavailable); adversarial-mutation-test skill 0.35.0",
+    "summary": {
+      "mutantsProbed": {
+        "server": 71,
+        "client": 72
+      },
+      "baselineTests": {
+        "server": 52,
+        "client": 0
+      },
+      "testsAfter": {
+        "server": 126,
+        "client": 42
+      },
+      "killedByPreExistingSuite": {
+        "server": 41,
+        "client": 0
+      },
+      "survivorsKilledByNewTests": {
+        "server": 19,
+        "client": 3
+      },
+      "equivalentMutants": [
+        "H11 resolve guard (redundant with later ItemNotFoundError raises)",
+        "H29 non-string reservationId guard (entry lookup yields not-found anyway)"
+      ],
+      "candidateBugs": [
+        "POST /api/hardware/request with quantity >= 2**63 returns HTTP 500 with a non-JSON body (BSON int64 overflow) [fixed]",
+        "Concurrent checkouts with ample stock are spuriously rejected 409 concurrent_modification (3/40 and 8/80 parallel, capacity 1000); no oversell [fixed]",
+        "ResourceView.loadHardware lets an older, slower response overwrite a newer one (stale numbers shown) [fixed]"
+      ],
+      "issuesFiled": [],
+      "candidateBugsFixedIn": "3112cbeb1424b35d62eae48d46e65bee5c899c5f"
+    }
+  }
+]
