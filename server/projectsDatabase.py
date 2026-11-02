@@ -278,6 +278,20 @@ def checkoutHardwareSet(client, projectId, userId, hwSetName, quantity):
     return hardwareDB.checkoutHardware(client, projectId, hwSetName, quantity, userId)
 
 
+def renameHardwareSet(client, projectId, userId, hwSetName, newName):
+    """Rename a hardware set after verifying project membership."""
+    assertProjectMember(client, projectId, userId)
+    return hardwareDB.renameHardwareSet(client, projectId, hwSetName, newName, userId)
+
+
+def setHardwareSetActive(client, projectId, userId, hwSetName, active):
+    """Deactivate or reactivate a hardware set after verifying project
+    membership.
+    """
+    assertProjectMember(client, projectId, userId)
+    return hardwareDB.setHardwareSetActive(client, projectId, hwSetName, active, userId)
+
+
 def requestHardwareSet(client, projectId, userId, userName, hwSetName, quantity):
     """Claim (request) a quantity of a hardware set under userId/userName
     after verifying project membership. Never compares quantity against

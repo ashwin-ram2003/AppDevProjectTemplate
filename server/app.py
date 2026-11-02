@@ -462,6 +462,8 @@ def checkout_hardware():
             "onHand": error.onHand,
             "requested": error.requested,
         }), 409
+    except hardwareDB.HardwareSetInactiveError:
+        return jsonify({"error": "hardware_set_inactive"}), 409
     finally:
         # Close the MongoDB connection
         client.close()
@@ -499,6 +501,8 @@ def request_hardware():
         return jsonify({"error": "invalid_input", "field": str(error)}), 400
     except hardwareDB.ItemNotFoundError:
         return jsonify({"error": "hardware_set_not_found"}), 404
+    except hardwareDB.HardwareSetInactiveError:
+        return jsonify({"error": "hardware_set_inactive"}), 409
     finally:
         # Close the MongoDB connection
         client.close()
@@ -535,6 +539,76 @@ def release_hardware():
         return jsonify({"error": "not_your_reservation"}), 403
     except hardwareDB.ReservationNotFoundError:
         return jsonify({"error": "reservation_not_found"}), 404
+    finally:
+        # Close the MongoDB connection
+        client.close()
+
+    # Return a JSON response
+    return jsonify({"hardwareSet": hardwareSet}), 200
+
+# Route for renaming a hardware set
+@app.route('/api/hardware/rename', methods=['POST'])
+def rename_hardware():
+    # Extract data from request
+    body = request.get_json(silent=True) or {}
+    projectId = body.get('projectId')
+    userId = body.get('userId')
+    hwSetName = body.get('hwSetName')
+    newName = body.get('newName')
+
+    if not projectId:
+        return jsonify({"error": "invalid_input", "field": "projectId"}), 400
+    if not userId:
+        return jsonify({"error": "invalid_input", "field": "userId"}), 400
+
+    # Connect to MongoDB
+    client = getMongoClient()
+
+    try:
+        hardwareSet = projectsDB.renameHardwareSet(client, projectId, userId, hwSetName, newName)
+    except projectsDB.NotAHouseholdMemberError:
+        return jsonify({"error": "not_a_project_member"}), 403
+    except hardwareDB.InvalidInventoryInput as error:
+        return jsonify({"error": "invalid_input", "field": str(error)}), 400
+    except hardwareDB.ItemNotFoundError:
+        return jsonify({"error": "hardware_set_not_found"}), 404
+    except hardwareDB.HardwareSetNameTakenError:
+        return jsonify({"error": "hardware_set_name_taken", "field": "newName"}), 409
+    finally:
+        # Close the MongoDB connection
+        client.close()
+
+    # Return a JSON response
+    return jsonify({"hardwareSet": hardwareSet}), 200
+
+# Route for deactivating or reactivating a hardware set
+@app.route('/api/hardware/set_active', methods=['POST'])
+def set_hardware_active():
+    # Extract data from request
+    body = request.get_json(silent=True) or {}
+    projectId = body.get('projectId')
+    userId = body.get('userId')
+    hwSetName = body.get('hwSetName')
+    active = body.get('active')
+
+    if not projectId:
+        return jsonify({"error": "invalid_input", "field": "projectId"}), 400
+    if not userId:
+        return jsonify({"error": "invalid_input", "field": "userId"}), 400
+
+    # Connect to MongoDB
+    client = getMongoClient()
+
+    try:
+        hardwareSet = projectsDB.setHardwareSetActive(client, projectId, userId, hwSetName, active)
+    except projectsDB.NotAHouseholdMemberError:
+        return jsonify({"error": "not_a_project_member"}), 403
+    except hardwareDB.InvalidInventoryInput as error:
+        return jsonify({"error": "invalid_input", "field": str(error)}), 400
+    except hardwareDB.ItemNotFoundError:
+        return jsonify({"error": "hardware_set_not_found"}), 404
+    except hardwareDB.HardwareSetInUseError as error:
+        return jsonify({"error": "hardware_set_in_use", "checkedOut": error.checkedOut}), 409
     finally:
         # Close the MongoDB connection
         client.close()
