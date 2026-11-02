@@ -16,7 +16,8 @@ HardwareSet = {
     '_id': ObjectId,
     'projectId': projectId,
     'hwSetKey': normalizeHwSetName(hwSetName),
-    'hwSetName': hwSetName,             # display name, first spelling used
+    'hwSetName': hwSetName,             # display name as last typed (create or rename)
+    'active': bool,                     # False = deactivated; a MISSING field reads as active
     'capacity': int,                    # fixed total units; never changed by checkin/checkout
     'checkedOut': int,                  # units currently checked out, project-wide (0..capacity)
     'checkedOutBy': [
@@ -45,6 +46,13 @@ HWSet1, HWSet2), each showing Capacity / Available, with Request (reserve),
 Checkout, and Checkin actions. There is no storage location, no freshness,
 and no per-restock batch history -- those were a prior domain-specific
 extension that has been removed.
+
+Deactivating a set (setHardwareSetActive) is refused while any units are
+checked out, and a deactivated set refuses new checkouts and new requests.
+Check-in and releasing an existing request stay available so nobody is
+stranded holding units. Reactivating restores normal use. Rename changes
+only the labels (hwSetName / hwSetKey); every internal write pins _id or
+reservationId, so it is safe at any time.
 
 `available` (capacity - checkedOut) is derived on read and never stored.
 Requests (reservations) are a coordination signal only and never reduce it.
@@ -106,6 +114,33 @@ class InsufficientStockError(Exception):
         super().__init__(
             "insufficient stock: onHand={} requested={}".format(onHand, requested)
         )
+
+
+class HardwareSetNameTakenError(Exception):
+    """Raised when a rename targets a name another set in the same project
+    already uses. Maps to HTTP 409.
+    """
+
+
+class HardwareSetInactiveError(Exception):
+    """Raised when a checkout or request targets a deactivated hardware set.
+    Maps to HTTP 409.
+    """
+
+
+class HardwareSetInUseError(Exception):
+    """Raised when a deactivate is refused because units are still checked
+    out. Maps to HTTP 409. Carries checkedOut (the live count).
+    """
+
+    def __init__(self, checkedOut):
+        self.checkedOut = checkedOut
+        super().__init__("hardware set in use: checkedOut={}".format(checkedOut))
+
+
+# $ne False matches True AND a missing field, so documents written before
+# `active` existed behave as active with no migration.
+_ACTIVE_GUARD = {"$ne": False}
 
 
 class CheckinExceedsCheckedOutError(Exception):
@@ -185,7 +220,7 @@ def _ensureHwSetUniqueIndex(collection):
 def createHardwareSet(client, projectId, rawName, capacity):
     """Create a hardware set with a fixed `capacity` and nothing checked
     out. Idempotent: if the set already exists it is returned unchanged
-    (capacity is never overwritten).
+    (capacity is never overwritten, and an inactive set stays inactive).
     """
     if not _isValidQuantity(capacity):
         raise InvalidInventoryInput("capacity")
@@ -204,6 +239,7 @@ def createHardwareSet(client, projectId, rawName, capacity):
             "projectId": projectId,
             "hwSetKey": normalizedName,
             "hwSetName": rawName,
+            "active": True,
             "capacity": capacity,
             "checkedOut": 0,
             "checkedOutBy": [],
@@ -260,6 +296,11 @@ def _adjustCheckedOut(client, projectId, rawName, quantity, userId, direction):
     single user's own `checkedOutBy` entry negative. When a write's filter
     doesn't match (another writer changed the live state first), the loop
     re-reads and retries against fresh data rather than failing outright.
+
+    Checkout writes also carry the active guard, so a deactivate landing
+    between the read and the write makes the write miss; the loop then
+    re-reads and raises HardwareSetInactiveError instead of retrying
+    forever. Checkin deliberately has no active guard.
     """
     if not _isValidQuantity(quantity):
         raise InvalidInventoryInput("quantity")
@@ -276,6 +317,9 @@ def _adjustCheckedOut(client, projectId, rawName, quantity, userId, direction):
         doc = collection.find_one({"projectId": projectId, "hwSetKey": targetKey})
         if doc is None:
             raise ItemNotFoundError(rawName)
+
+        if direction > 0 and doc.get("active", True) is False:
+            raise HardwareSetInactiveError(rawName)
 
         # capacity never changes after creation, so a stale read of it is safe.
         capacity = doc.get("capacity", 0)
@@ -305,6 +349,7 @@ def _adjustCheckedOut(client, projectId, rawName, quantity, userId, direction):
                     "_id": doc["_id"],
                     "checkedOut": aggregateGuard,
                     "checkedOutBy.userId": userId,
+                    "active": _ACTIVE_GUARD,
                 }
             else:
                 # Checkin needs no live check on the project-wide
@@ -350,6 +395,7 @@ def _adjustCheckedOut(client, projectId, rawName, quantity, userId, direction):
                     "_id": doc["_id"],
                     "checkedOut": aggregateGuard,
                     "checkedOutBy.userId": {"$ne": userId},
+                    "active": _ACTIVE_GUARD,
                 },
                 {
                     "$inc": {"checkedOut": direction * quantity},
@@ -360,6 +406,84 @@ def _adjustCheckedOut(client, projectId, rawName, quantity, userId, direction):
 
         if updated is not None:
             return _serializeHardwareSet(updated, userId)
+
+
+def renameHardwareSet(client, projectId, rawName, rawNewName, userId=None):
+    """Rename a hardware set: hwSetName (display, stripped of surrounding
+    whitespace) and hwSetKey change together. The unique index is the only
+    collision check, so two racing renames cannot both win. Raises
+    HardwareSetNameTakenError on a collision, ItemNotFoundError if the set
+    does not exist.
+    """
+    try:
+        currentKey = normalizeHwSetName(rawName)
+    except ValueError:
+        raise InvalidInventoryInput("hwSetName")
+    try:
+        newKey = normalizeHwSetName(rawNewName)
+    except ValueError:
+        raise InvalidInventoryInput("newName")
+
+    collection = client[DB_NAME][HARDWARE_SETS_COLLECTION]
+    # Otherwise only createHardwareSet makes this index, and without it the
+    # collision would silently be allowed.
+    _ensureHwSetUniqueIndex(collection)
+
+    try:
+        updated = collection.find_one_and_update(
+            {"projectId": projectId, "hwSetKey": currentKey},
+            {"$set": {"hwSetKey": newKey, "hwSetName": rawNewName.strip()}},
+            return_document=ReturnDocument.AFTER,
+        )
+    except DuplicateKeyError:
+        raise HardwareSetNameTakenError(rawNewName)
+
+    if updated is None:
+        raise ItemNotFoundError(rawName)
+
+    return _serializeHardwareSet(updated, userId)
+
+
+def setHardwareSetActive(client, projectId, rawName, active, userId=None):
+    """Deactivate (active=False) or reactivate (active=True) a hardware set.
+    Both are idempotent. Deactivating is refused with HardwareSetInUseError
+    while any units are checked out.
+    """
+    if not isinstance(active, bool):
+        raise InvalidInventoryInput("active")
+    try:
+        key = normalizeHwSetName(rawName)
+    except ValueError:
+        raise InvalidInventoryInput("hwSetName")
+
+    collection = client[DB_NAME][HARDWARE_SETS_COLLECTION]
+    base = {"projectId": projectId, "hwSetKey": key}
+
+    if active:
+        updated = collection.find_one_and_update(
+            base, {"$set": {"active": True}}, return_document=ReturnDocument.AFTER
+        )
+        if updated is None:
+            raise ItemNotFoundError(rawName)
+        return _serializeHardwareSet(updated, userId)
+
+    while True:
+        # $not $gt (not a literal 0): a document missing checkedOut must
+        # still match, or the re-read below would loop forever.
+        updated = collection.find_one_and_update(
+            dict(base, checkedOut={"$not": {"$gt": 0}}),
+            {"$set": {"active": False}},
+            return_document=ReturnDocument.AFTER,
+        )
+        if updated is not None:
+            return _serializeHardwareSet(updated, userId)
+
+        doc = collection.find_one(base)
+        if doc is None:
+            raise ItemNotFoundError(rawName)
+        if doc.get("checkedOut", 0) > 0:
+            raise HardwareSetInUseError(doc.get("checkedOut", 0))
+        # A concurrent check-in emptied the set; try the write again.
 
 
 def checkinHardware(client, projectId, rawName, quantity, userId):
@@ -415,7 +539,7 @@ def addReservation(client, projectId, rawName, quantity, userId, userName):
     }
 
     updated = collection.find_one_and_update(
-        {"projectId": projectId, "hwSetKey": targetKey},
+        {"projectId": projectId, "hwSetKey": targetKey, "active": _ACTIVE_GUARD},
         {
             "$push": {"reservations": reservation},
             "$inc": {"reservedQuantity": quantity},
@@ -424,7 +548,10 @@ def addReservation(client, projectId, rawName, quantity, userId, userName):
     )
 
     if updated is None:
-        raise ItemNotFoundError(rawName)
+        # Either the set vanished or the active guard missed.
+        if collection.find_one({"projectId": projectId, "hwSetKey": targetKey}, {"_id": 1}) is None:
+            raise ItemNotFoundError(rawName)
+        raise HardwareSetInactiveError(rawName)
 
     return reservationId, _serializeHardwareSet(updated, userId)
 
@@ -556,6 +683,7 @@ def _serializeHardwareSet(doc, userId=None):
         "projectId": doc.get("projectId"),
         "hwSetKey": doc.get("hwSetKey"),
         "hwSetName": doc.get("hwSetName"),
+        "active": doc.get("active", True),
         "capacity": capacity,
         "requests": requests,
         "requestedQuantity": reservedQuantity,

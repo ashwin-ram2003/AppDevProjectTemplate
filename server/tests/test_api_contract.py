@@ -49,6 +49,18 @@ ROUTES = [
         {"projectId": "H1", "userId": "alice", "requestId": "no-such-request"},
         "invalid_input",
     ),
+    (
+        "POST",
+        "/api/hardware/rename",
+        {"projectId": "H1", "userId": "alice", "hwSetName": "HWSet1", "newName": "Renamed"},
+        "invalid_input",
+    ),
+    (
+        "POST",
+        "/api/hardware/set_active",
+        {"projectId": "H1", "userId": "alice", "hwSetName": "HWSet1", "active": True},
+        "invalid_input",
+    ),
 ]
 
 ROUTE_IDS = [path for _method, path, _payload, _code in ROUTES]

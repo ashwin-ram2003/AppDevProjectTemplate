@@ -2,6 +2,9 @@ import { checkoutHardware } from '../api/hardware.js';
 import QuantityAction from './QuantityAction.js';
 
 function describeCheckoutError(error) {
+  if (error.message === 'hardware_set_inactive') {
+    return "This hardware set is deactivated, so it can't be checked out.";
+  }
   if (typeof error.onHand === 'number') {
     return `Only ${error.onHand} available -- can't check out ${error.requested}.`;
   }
@@ -26,8 +29,9 @@ function describeCheckoutError(error) {
  *   available -- the most that can be checked out right now. No
  *   fallback/default.
  * @param {Function} props.onChanged - Async reload callback.
+ * @param {boolean} [props.disabled] - True while the set is deactivated.
  */
-export default function CheckOut({ projectId, userId, hwSetName, available, onChanged }) {
+export default function CheckOut({ projectId, userId, hwSetName, available, onChanged, disabled }) {
   return (
     <QuantityAction
       label="Check Out"
@@ -36,6 +40,7 @@ export default function CheckOut({ projectId, userId, hwSetName, available, onCh
       describeError={describeCheckoutError}
       onChanged={onChanged}
       max={available}
+      disabled={disabled}
     />
   );
 }
