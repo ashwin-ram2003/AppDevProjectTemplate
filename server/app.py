@@ -1,5 +1,8 @@
 # Import necessary libraries and modules
 import os
+from dotenv import load_dotenv
+# Load .env before the custom modules below, since they read env vars at import time
+load_dotenv()
 from functools import wraps
 from bson.objectid import ObjectId
 from flask import Flask, request, jsonify, g, session, send_from_directory
@@ -13,8 +16,6 @@ from encryption import protect_user_id
 
 # MongoDB connection string, read from the environment so credentials stay out of git
 # (falls back to a local MongoDB for development)
-from dotenv import load_dotenv
-load_dotenv()
 
 IS_LOCAL_DEVELOPMENT = os.environ.get("USE_MOCK_DB") == "1" or os.environ.get("FLASK_ENV") == "development"
 IS_PRODUCTION = not IS_LOCAL_DEVELOPMENT
