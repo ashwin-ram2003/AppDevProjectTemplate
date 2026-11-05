@@ -12,7 +12,8 @@
   },
   "scripts": {
     "start": "serve -s client/build -l $PORT",
-    "build": "cd client && react-scripts build"
+    "build": "cd client && react-scripts build",
+    "dev": "cd client && react-scripts start"
   },
   "browserslist": {
     "production": [
