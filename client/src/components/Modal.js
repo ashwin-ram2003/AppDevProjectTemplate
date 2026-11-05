@@ -2,41 +2,6 @@
 
 import React, { useEffect, useId, useRef } from 'react';
 
-// Inline styles so the pop-up works without any extra CSS
-const backdropStyle = {
-  position: 'fixed',
-  inset: 0,
-  background: 'rgba(0, 0, 0, 0.45)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: 16,
-  zIndex: 1000,
-};
-
-const dialogStyle = {
-  width: '100%',
-  maxWidth: 420,
-  maxHeight: '90vh',
-  overflowY: 'auto',
-  margin: 0,
-};
-
-const headerStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  marginBottom: 8,
-};
-
-const closeButtonStyle = {
-  background: 'transparent',
-  color: 'inherit',
-  border: 0,
-  fontSize: 18,
-  padding: '4px 8px',
-};
-
 export default function Modal({ open, title, onClose, children }) {
   const titleId = useId();
   const dialogRef = useRef(null);
@@ -68,10 +33,9 @@ export default function Modal({ open, title, onClose, children }) {
 
   return (
     // Clicking the dim backdrop closes
-    <div style={backdropStyle} onMouseDown={onClose}>
+    <div className="modal-backdrop" onMouseDown={onClose}>
       <div
-        className="card"
-        style={dialogStyle}
+        className="card modal-dialog"
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
@@ -79,9 +43,9 @@ export default function Modal({ open, title, onClose, children }) {
         ref={dialogRef}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <div style={headerStyle}>
-          <h2 id={titleId} style={{ margin: 0 }}>{title}</h2>
-          <button type="button" style={closeButtonStyle} aria-label="Close" onClick={onClose}>
+        <div className="modal-header">
+          <h2 id={titleId}>{title}</h2>
+          <button className="modal-close" type="button" aria-label="Close" onClick={onClose}>
             ✕
           </button>
         </div>
