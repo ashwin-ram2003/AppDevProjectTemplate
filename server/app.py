@@ -26,6 +26,7 @@ try:
         ProjectNotFoundError,
         addUser as addUserToProject,
         createProject,
+        listUserProjects,
         queryProject,
     )
     from .usersDatabase import addUser, joinProject, userExists
@@ -45,6 +46,7 @@ except ImportError:  # Supports `python server/app.py` from the repository root.
         ProjectNotFoundError,
         addUser as addUserToProject,
         createProject,
+        listUserProjects,
         queryProject,
     )
     from usersDatabase import addUser, joinProject, userExists
@@ -306,6 +308,36 @@ def create_app(
             return jsonify({"error": "Projects are temporarily unavailable."}), 503
 
         return jsonify(project), 200
+
+        
+    # Existing team endpoints remain available for parallel development.
+    @app.get("/api/users/<string:user_id>/projects")
+    def get_user_projects_api(user_id):
+        """List every project a user belongs to (issue #6: View My Projects)."""
+        # TODO: take the user from the signed-in session once Sign In (#2)
+        # lands, instead of trusting the URL.
+        user_id = user_id.strip()
+        if not user_id:
+            return jsonify({"error": "User ID is required."}), 400
+
+        user_collection = app.extensions["user_collection"]
+        try:
+            # Dummy mode has no user collection, so skip the check there.
+            if user_collection is not None and not userExists(
+                user_collection, user_id
+            ):
+                return jsonify({"error": f"User '{user_id}' was not found."}), 404
+
+            projects = listUserProjects(
+                app.extensions["projects_collection"], user_id
+            )
+        except ValueError as error:
+            return jsonify({"error": str(error)}), 400
+        except PyMongoError:
+            return jsonify({"error": "Projects are temporarily unavailable."}), 503
+
+        return jsonify({"projects": projects}), 200
+
     
     # Existing team endpoints remain available for parallel development.
     @app.post("/login")

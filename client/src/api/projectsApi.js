@@ -33,3 +33,10 @@ export async function joinProject({ projectId, userId }) {
 export async function fetchProject(projectId) {
   return requestJson(`/api/projects/${encodeURIComponent(projectId)}`);
 }
+
+export async function fetchUserProjects(userId) {
+  const payload = await requestJson(
+    `/api/users/${encodeURIComponent(userId)}/projects`
+  );
+  return payload.projects;
+}

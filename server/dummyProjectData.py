@@ -34,6 +34,10 @@ class InMemoryProjectCollection:
             if isinstance(actual, list):
                 return target not in actual
             return actual != target
+        # For lists, a plain value means "x is in the list", like MongoDB.
+        if isinstance(actual, list) and not isinstance(expected, (list, dict)):
+            return expected in actual
+
         return actual == expected
 
     def _matches(self, document, query):

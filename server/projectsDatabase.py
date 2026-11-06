@@ -118,6 +118,23 @@ def createProject(collection, projectName, projectId, description="", creatorId=
     return serializeProject(document)
 
 
+def listUserProjects(collection, userId):
+    """Return every project the user belongs to (issue #6: View My Projects).
+
+    In MongoDB, {"users": userId} matches any project whose users list
+    contains userId. Projects come back sorted by name so the dashboard
+    order is stable. Raises ValueError if userId is missing.
+    """
+    if not isinstance(userId, str) or not userId.strip():
+        raise ValueError("User ID is required.")
+    userId = userId.strip()
+
+    projects = [
+        serializeProject(document)
+        for document in collection.find({"users": userId})
+    ]
+    return sorted(projects, key=lambda project: project["projectName"].lower())
+
 # --- Not yet implemented (see issues #5 and #18-#24) -----------------------
 
 def addUser(collection, projectId, userId):

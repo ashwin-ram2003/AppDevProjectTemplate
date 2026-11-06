@@ -355,3 +355,172 @@
 .dashboard-links a:hover {
   background: var(--soft-surface);
 }
+
+/* My Projects list on the dashboard (issue #6) */
+.dashboard-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  gap: 32px;
+  align-items: start;
+}
+
+.dashboard-main > .user-id-form {
+  margin-top: 0;
+}
+
+.dashboard-actions {
+  max-width: none;
+}
+
+/* Small screens: buttons go on top, list underneath. */
+@media (max-width: 800px) {
+  .dashboard-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-actions {
+    order: -1;
+  }
+}
+
+.user-id-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.user-id-form .field-row {
+  flex: 1 1 240px;
+  margin: 0;
+}
+
+.project-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.project-card {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  padding: 14px 18px;
+  cursor: pointer;
+}
+
+.project-card:hover,
+.project-card-open {
+  background: var(--soft-surface);
+}
+
+.project-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.project-card h3 a {
+  color: var(--ink);
+}
+
+.project-toggle {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  width: 32px;
+  height: 32px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.project-snippet {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.project-open-link {
+  display: inline-block;
+  margin-top: 8px;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.project-card h3 {
+  margin: 0 0 4px;
+}
+
+.project-card p {
+  margin: 4px 0 0;
+}
+
+.project-meta {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+/* Full project page (issue #6) */
+.project-heading .page-title {
+  border-bottom: 0;
+  padding-bottom: 2px;
+}
+
+.project-id-line {
+  margin: 0;
+  padding: 0 24px 12px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.project-page-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  gap: 32px;
+  align-items: start;
+}
+
+.project-page-main {
+  display: grid;
+  gap: 32px;
+}
+
+.project-page-layout h2 {
+  margin-top: 0;
+}
+
+.empty-state + .dashboard-links {
+  margin-top: 12px;
+}
+
+/* "Members (n)" looks like a heading but opens and closes the list. */
+.members-toggle {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+.members-toggle:hover {
+  text-decoration: underline;
+}
+
+.members-heading {
+  margin-bottom: 0;
+}
+
+#project-members-list {
+  margin: 12px 0 0;
+  padding-left: 20px;
+}
+
+/* Small screens: members drop below everything else. */
+@media (max-width: 800px) {
+  .project-page-layout {
+    grid-template-columns: 1fr;
+  }
+}
