@@ -21,7 +21,7 @@ try:
         requestSpace,
     )
     from .projectsDatabase import ProjectExistsError, createProject, queryProject
-    from .usersDatabase import addUser
+    from .usersDatabase import addUser, login as loginUser
 except ImportError:  # Supports `python server/app.py` from the repository root.
     from dummyHardwareData import DUMMY_HARDWARE, InMemoryHardwareCollection
     from dummyProjectData import DUMMY_PROJECTS, InMemoryProjectCollection
@@ -33,7 +33,7 @@ except ImportError:  # Supports `python server/app.py` from the repository root.
         requestSpace,
     )
     from projectsDatabase import ProjectExistsError, createProject, queryProject
-    from usersDatabase import addUser
+    from usersDatabase import addUser, login as loginUser
 
 
 load_dotenv(Path(__file__).resolve().parents[1] / ".env")
@@ -238,7 +238,40 @@ def create_app(
     # Existing team endpoints remain available for parallel development.
     @app.post("/login")
     def login():
-        return jsonify({})
+        data = request.get_json(silent=True) or {}
+
+        user_id = str(data.get("userId", "")).strip()
+        password = data.get("password", "")
+
+        if not user_id or not password:
+            return jsonify({
+                "error": "User ID and password are required."
+            }), 400
+
+        user_collection = app.extensions["user_collection"]
+
+        if user_collection is None:
+            return jsonify({
+                "error": "User database is unavailable."
+            }), 503
+
+        try:
+            user = loginUser(
+                user_collection,
+                user_id,
+                password,
+            )
+        except PyMongoError:
+            return jsonify({
+                "error": "User database is temporarily unavailable."
+            }), 503
+
+        if user is None:
+            return jsonify({
+                "error": "Invalid user ID or password."
+            }), 401
+
+        return jsonify({"user": user}), 200
 
     @app.get("/main")
     def main_page():
