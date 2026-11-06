@@ -1,20 +1,79 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 
 function LoginPage() {
+  const [userId, setUserId] = useState("");
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
+
+  const navigate = useNavigate();
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    if (!userId || !password) {
+      setMessage("Please enter your User ID and password.");
+      return;
+    }
+
+    try {
+      const response = await fetch("/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: userId,
+          password: password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setMessage(data.error || "Unable to sign in.");
+        return;
+      }
+
+      navigate("/dashboard");
+    } catch (error) {
+      setMessage("Unable to connect to the server.");
+    }
+  };
+
   return (
-    <section className="checkout-page">
-      <h1 className="page-title">Welcome to HardwareShare</h1>
+    <section className="account-page">
+      <div className="account-card">
+        <h1>Sign In</h1>
 
-      <div className="checkout-content">
-        <h2>Log In or Sign Up</h2>
-        <p>Sign in to access your projects and hardware resources.</p>
+        <form onSubmit={handleSubmit}>
+          <label htmlFor="user-id">User ID</label>
+          <input
+            id="user-id"
+            type="text"
+            value={userId}
+            onChange={(event) => setUserId(event.target.value)}
+          />
 
-        <p>Login functionality is coming soon.</p>
+          <label htmlFor="password">Password</label>
+          <input
+            id="password"
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+          />
 
-        <nav className="dashboard-links">
-            <Link to="/create-account">Sign Up</Link>
-            <Link to="/dashboard">Continue to Dashboard (Demo)</Link>
-        </nav>
+          <button
+            className="button button-primary account-button"
+            type="submit"
+          >
+            Sign In
+          </button>
+
+          {message && <p className="account-message">{message}</p>}
+        </form>
+
+        <Link to="/create-account">Create Account</Link>
       </div>
     </section>
   );

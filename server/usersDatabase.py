@@ -1,6 +1,6 @@
 # Import necessary libraries and modules
 #from pymongo import MongoClient
-from werkzeug.security import generate_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 
 #import projectsDatabase as projectsDB
 
@@ -46,9 +46,22 @@ def __queryUser(client, username, userId):
     pass
 
 # Function to log in a user
-def login(client, username, userId, password):
-    # Authenticate a user and return login status
-    pass
+def login(collection, userId, password):
+    """Authenticate a user by user ID and password."""
+
+    user = collection.find_one({"userId": userId})
+
+    if user is None:
+        return None
+
+    if not check_password_hash(user["password"], password):
+        return None
+
+    return {
+        "username": user.get("username", userId),
+        "userId": user["userId"],
+        "projects": user.get("projects", []),
+    }
 
 def userExists(collection, userId):
     """Return True if a user with this userId is registered."""
