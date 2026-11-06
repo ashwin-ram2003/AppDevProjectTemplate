@@ -1,83 +1,121 @@
-# AppDevProjectTemplate
-Template for MIS385N (Advanced Programming and App Development) Team Project
+# ECE 461L Project Info
+Software Engineering Team Project
 # Project Overview
 
-This project is a web application built using Flask and MongoDB, and React. The application manages users, projects, and hardware sets, allowing users to log in, join projects, and request hardware. The backend consists of four main Python files that handle different aspects of the application's functionality.
+This project is a web application for managing users, projects, and shared resources. The application uses React for the front end, Flask for the back end, and MongoDB for data storage. The main functionality includes user authentication, project management, resource availability, resource checkout/check-in, and automated testing.
 
-## 1. `app.py`
+## 1. Technology Stack
 
 This file is the main entry point of the application. It sets up the Flask web server and defines various routes for handling user requests.
 
-- **Routes:**
-  - `/login`: Handles user login.
-  - `/main`: Handles requests to the main user portal.
-  - `/join_project`: Allows a user to join a project.
-  - `/add_user`: Adds a new user to the database.
-  - `/get_user_projects_list`: Retrieves the list of projects a user is part of.
-  - `/create_project`: Creates a new project.
-  - `/get_project_info`: Retrieves information about a project.
-  - `/get_all_hw_names`: Retrieves a list of all hardware set names.
-  - `/get_hw_info`: Retrieves information about a specific hardware set.
-  - `/check_out`: Handles hardware checkout for a project.
-  - `/check_in`: Handles hardware check-in for a project.
-  - `/create_hardware_set`: Creates a new hardware set.
-  - `/api/inventory`: Checks the inventory of projects.
+Front End: React.js
 
-## 2. `hardwareDB.py`
+Back End: Python / Flask
 
-This file contains functions for managing hardware sets in the database.
+Database: MongoDB
 
-- **Functions:**
-  - `createHardwareSet`: Creates a new hardware set.
-  - `queryHardwareSet`: Queries a hardware set by its name.
-  - `updateAvailability`: Updates the availability of a hardware set.
-  - `requestSpace`: Requests a certain amount of hardware from a set.
-  - `getAllHwNames`: Retrieves a list of all hardware set names.
+Testing: Pytest
 
-## 3. `projectsDB.py`
+Version Control: Git / GitHub
 
-This file contains functions for managing projects in the database.
+Deployment: Heroku
 
-- **Functions:**
-  - `queryProject`: Queries a project by its ID.
-  - `createProject`: Creates a new project.
-  - `addUser`: Adds a user to a project.
-  - `updateUsage`: Updates the usage of a hardware set in a project.
-  - `checkOutHW`: Handles hardware checkout for a project.
-  - `checkInHW`: Handles hardware check-in for a project.
+## 2. Application Components
 
-## 4. `usersDB.py`
+**User Management:**
+Handles user accounts and authentication.
+Main functions:
 
-This file contains functions for managing users in the database.
+-Create a user account
 
-- **Functions:**
-  - `addUser`: Adds a new user to the database.
-  - `__queryUser`: Helper function to query a user by username and userId.
-  - `login`: Authenticates a user and handles login.
-  - `joinProject`: Adds a user to a project.
-  - `getUserProjectsList`: Retrieves the list of projects a user is part of.
+-Log in and log out
 
-## How the Files Interact
+-Securely store user credentials
 
-1. **User Management (`usersDB.py`):**
-   - `addUser` function in `usersDB.py` is used to add new users to the database.
-   - `login` function in `usersDB.py` is used to authenticate users when they log in through the `/login` route in `app.py`.
-   - `joinProject` function in `usersDB.py` adds users to projects and interacts with `projectsDB.py` to update project information.
+-Authenticate users
 
-2. **Project Management (`projectsDB.py`):**
-   - `createProject` function in `projectsDB.py` is called through the `/create_project` route in `app.py` to create new projects.
-   - `addUser` function in `projectsDB.py` adds users to projects, updating the project's user list.
-   - `checkOutHW` and `checkInHW` functions in `projectsDB.py` handle hardware check-out and check-in for projects, respectively, interacting with `hardwareDB.py` to update hardware availability.
+**Project Management**
+Handles project creation and membership.
+Main functions:
 
-3. **Hardware Management (`hardwareDB.py`):**
-   - `createHardwareSet` function in `hardwareDB.py` is used to create new hardware sets through the `/create_hardware_set` route in `app.py`.
-   - `requestSpace` function in `hardwareDB.py` handles requests for hardware availability when users check out or check in hardware through the `/check_out` and `/check_in` routes in `app.py`.
-   - `getAllHwNames` and `queryHardwareSet` functions in `hardwareDB.py` provide hardware set information to various routes in `app.py`.
+-Create a new project
 
-4. **Main Application (`app.py`):**
-   - Defines routes that handle HTTP requests and interact with `usersDB.py`, `projectsDB.py`, and `hardwareDB.py` to perform various operations.
-   - Routes call appropriate functions from the respective database modules to manage users, projects, and hardware sets.
+-Access an existing project
 
-## Client side
+-Join a project using a project ID
 
-1. Design choices are up to you, but an example directory structure has been provided. 
+-Store project name, description, and project ID
+
+-Track users associated with a project
+
+**Resource Management**
+Handles the application's shared resources.
+Main functions:
+
+-View resource capacity
+
+-View current resource availability
+
+-Request available resource units
+
+-Check out resource units
+
+-Reject requests exceeding available capacity
+
+-Check resource units back in
+
+-Prevent users from checking in more units than their project has checked out
+
+-Update resource availability after checkout/check-in
+
+**Database**
+MongoDB stores persistent application data.
+Main data collections include:
+
+-Users
+
+-Projects
+
+-Resources
+
+The database is accessed through the Flask API.
+
+**Back-end API**
+The Flask backend provides the API between the React front end and MongoDB.
+Main functions:
+
+-Handle user authentication
+
+-Manage users
+
+-Create and access projects
+
+-Manage project membership
+
+-Check resource availability
+
+-Process resource check-in and checkout
+
+**Front-end**
+The React front end provides the user interface for the application.
+Main screens/functionality include:
+
+-User sign-in and account creation
+
+-Project creation and access
+
+-Project resource management
+
+-Resource availability
+
+-Resource check-in and checkout
+
+## 3. Testing
+Pytest is used for automated testing.
+Testing includes:
+
+-API endpoints
+
+-Database logic
+
+-Check-in and checkout functionality
