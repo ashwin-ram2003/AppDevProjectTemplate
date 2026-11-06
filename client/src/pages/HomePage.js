@@ -1,13 +1,18 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { fetchUserProjects } from "../api/projectsApi";
+import { fetchProjects, fetchUserProjects, joinProject } from "../api/projectsApi";
 import Button from "../components/Button";
 import ProjectCard from "../components/ProjectCard";
 
 // Remembers the last user ID so the list reloads when you come back from
 // Create or Join. TODO: remove once Sign In (#2) gives us the real user.
 const USER_ID_KEY = "dashboardUserId";
+
+const INITIAL_HARDWARE = [
+  { name: "HWSet1", capacity: 100, available: 100 },
+  { name: "HWSet2", capacity: 100, available: 100 },
+];
 
 function readSavedUserId() {
   try {
@@ -29,13 +34,31 @@ function HomePage() {
   const [userIdInput, setUserIdInput] = useState(readSavedUserId);
   const [loadedUserId, setLoadedUserId] = useState("");
   const [projects, setProjects] = useState([]);
+  const [allProjects, setAllProjects] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  // Only one project's snippet is open at a time; null means none.
-  const [expandedId, setExpandedId] = useState(null);
+  const [hardware, setHardware] = useState(INITIAL_HARDWARE);
 
-  const toggleProject = (projectId) => {
-    setExpandedId((current) => (current === projectId ? null : projectId));
+  const updateHardware = (projectId, hardwareName, quantityChange) => {
+    setHardware((items) => items.map((item) => (
+      item.name === hardwareName
+        ? {
+          ...item,
+          available: Math.min(item.capacity, item.available - quantityChange),
+        }
+        : item
+    )));
+    setProjects((items) => items.map((project) => (
+      project.projectId === projectId
+        ? {
+          ...project,
+          hwSets: {
+            ...project.hwSets,
+            [hardwareName]: (project.hwSets?.[hardwareName] || 0) + quantityChange,
+          },
+        }
+        : project
+    )));
   };
 
   const loadProjects = async (rawUserId) => {
@@ -48,13 +71,17 @@ function HomePage() {
 
     setLoading(true);
     try {
-      const userProjects = await fetchUserProjects(userId);
+      const [userProjects, everyProject] = await Promise.all([
+        fetchUserProjects(userId),
+        fetchProjects(),
+      ]);
       setProjects(userProjects);
-      setExpandedId(null);
+      setAllProjects(everyProject);
       setLoadedUserId(userId);
       saveUserId(userId);
     } catch (requestError) {
       setProjects([]);
+      setAllProjects([]);
       setLoadedUserId("");
       setError(requestError.message);
     } finally {
@@ -74,6 +101,27 @@ function HomePage() {
     event.preventDefault();
     loadProjects(userIdInput);
   };
+
+  const joinAvailableProject = async (projectId) => {
+    setError("");
+    try {
+      const joinedProject = await joinProject({
+        projectId,
+        userId: loadedUserId,
+      });
+      setProjects((items) => [...items, joinedProject]);
+      setAllProjects((items) => items.map((project) => (
+        project.projectId === projectId ? joinedProject : project
+      )));
+    } catch (requestError) {
+      setError(requestError.message);
+    }
+  };
+
+  const projectIds = new Set(projects.map((project) => project.projectId));
+  const availableProjects = allProjects.filter(
+    (project) => !projectIds.has(project.projectId)
+  );
 
   return (
     <section className="checkout-page">
@@ -121,11 +169,29 @@ function HomePage() {
                     <ProjectCard
                       key={project.projectId}
                       project={project}
-                      expanded={expandedId === project.projectId}
-                      onToggle={() => toggleProject(project.projectId)}
+                      hardware={hardware}
+                      onUpdateHardware={updateHardware}
                     />
                   ))}
                 </ul>
+              )}
+
+              {loadedUserId && availableProjects.length > 0 && (
+                <>
+                  <h2 className="available-projects-title">Available Projects</h2>
+                  <ul className="project-list" aria-label="Available projects">
+                    {availableProjects.map((project) => (
+                      <ProjectCard
+                        key={project.projectId}
+                        project={project}
+                        hardware={hardware}
+                        canManage={false}
+                        onJoin={joinAvailableProject}
+                        onUpdateHardware={updateHardware}
+                      />
+                    ))}
+                  </ul>
+                </>
               )}
             </div>
 

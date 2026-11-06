@@ -62,6 +62,15 @@ def test_created_project_can_be_fetched():
     assert response.get_json()["projectName"] == "Robot Arm"
 
 
+def test_lists_all_projects():
+    response = make_client().get("/api/projects")
+
+    assert response.status_code == 200
+    assert [project["projectId"] for project in response.get_json()["projects"]] == [
+        "existing"
+    ]
+
+
 def test_create_project_trims_whitespace_and_allows_missing_description():
     body = valid_body(projectName="  Robot Arm  ", projectId=" robot-arm ")
     del body["description"]
@@ -147,6 +156,9 @@ def test_database_duplicate_key_race_returns_409():
 
 
 class BrokenCollection(InMemoryProjectCollection):
+    def find(self, query):
+        raise PyMongoError("database down")
+
     def find_one(self, query):
         raise PyMongoError("database down")
 
@@ -156,3 +168,4 @@ def test_database_error_returns_503():
 
     assert client.post("/api/projects", json=valid_body()).status_code == 503
     assert client.get("/api/projects/robot-arm").status_code == 503
+    assert client.get("/api/projects").status_code == 503

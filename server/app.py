@@ -26,6 +26,7 @@ try:
         ProjectNotFoundError,
         addUser as addUserToProject,
         createProject,
+        listProjects,
         listUserProjects,
         queryProject,
     )
@@ -46,6 +47,7 @@ except ImportError:  # Supports `python server/app.py` from the repository root.
         ProjectNotFoundError,
         addUser as addUserToProject,
         createProject,
+        listProjects,
         listUserProjects,
         queryProject,
     )
@@ -257,6 +259,14 @@ def create_app(
             return jsonify({"error": "Projects are temporarily unavailable."}), 503
 
         return jsonify(project), 201
+
+    @app.get("/api/projects")
+    def get_projects_api():
+        try:
+            projects = listProjects(app.extensions["projects_collection"])
+        except PyMongoError:
+            return jsonify({"error": "Projects are temporarily unavailable."}), 503
+        return jsonify({"projects": projects}), 200
 
     @app.get("/api/projects/<string:project_id>")
     def get_project_api(project_id):

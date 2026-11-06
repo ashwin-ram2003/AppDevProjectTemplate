@@ -135,6 +135,12 @@ def listUserProjects(collection, userId):
     ]
     return sorted(projects, key=lambda project: project["projectName"].lower())
 
+
+def listProjects(collection):
+    """Return every project sorted by name."""
+    projects = [serializeProject(document) for document in collection.find({})]
+    return sorted(projects, key=lambda project: project["projectName"].lower())
+
 # --- Not yet implemented (see issues #5 and #18-#24) -----------------------
 
 def addUser(collection, projectId, userId):

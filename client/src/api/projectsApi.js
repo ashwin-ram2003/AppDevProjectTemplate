@@ -34,6 +34,11 @@ export async function fetchProject(projectId) {
   return requestJson(`/api/projects/${encodeURIComponent(projectId)}`);
 }
 
+export async function fetchProjects() {
+  const payload = await requestJson("/api/projects");
+  return payload.projects;
+}
+
 export async function fetchUserProjects(userId) {
   const payload = await requestJson(
     `/api/users/${encodeURIComponent(userId)}/projects`

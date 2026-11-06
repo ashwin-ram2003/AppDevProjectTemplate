@@ -1,5 +1,5 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import HomePage from "./HomePage";
 
 afterEach(() => {
@@ -34,7 +34,7 @@ const PROJECTS = [
     projectName: "Robot Arm",
     projectId: "robot-arm",
     description: "Senior design prototype",
-    hwSets: {},
+    hwSets: { HWSet1: 5 },
     users: ["sydney", "alice"],
   },
   {
@@ -78,8 +78,8 @@ test("shows every project the user belongs to", async () => {
 
   submitUserId(" sydney ");
 
-  expect(await screen.findByRole("link", { name: "Robot Arm" })).toBeTruthy();
-  expect(screen.getByRole("link", { name: "Solo Project" })).toBeTruthy();
+  expect(await screen.findByRole("heading", { name: "Robot Arm" })).toBeTruthy();
+  expect(screen.getByRole("heading", { name: "Solo Project" })).toBeTruthy();
   expect(screen.getByText(/2 members/)).toBeTruthy();
   expect(screen.getByText(/1 member$/)).toBeTruthy();
   expect(fetchSpy.mock.calls[0][0]).toBe("/api/users/sydney/projects");
@@ -124,60 +124,129 @@ test("reloads the list automatically for a remembered user", async () => {
   mockFetch(200, { projects: PROJECTS });
   renderPage();
 
-  expect(await screen.findByRole("link", { name: "Robot Arm" })).toBeTruthy();
+  expect(await screen.findByRole("heading", { name: "Robot Arm" })).toBeTruthy();
 });
 
-test("clicking a project card shows a snippet, clicking again hides it", async () => {
+test("shows project details directly on the dashboard", async () => {
   mockFetch(200, { projects: PROJECTS });
   renderPage();
   submitUserId("sydney");
 
-  await screen.findByRole("link", { name: "Robot Arm" });
-  expect(screen.queryByText("Senior design prototype")).toBeNull();
-
-  fireEvent.click(screen.getByText(/Project ID: robot-arm/));
+  await screen.findByRole("heading", { name: "Robot Arm" });
   expect(screen.getByText("Senior design prototype")).toBeTruthy();
   expect(screen.getByText("sydney, alice")).toBeTruthy();
-  expect(
-    screen.getByRole("button", { name: "Hide details for Robot Arm" })
-      .getAttribute("aria-expanded")
-  ).toBe("true");
-
-  fireEvent.click(screen.getByText(/Project ID: robot-arm/));
-  expect(screen.queryByText("Senior design prototype")).toBeNull();
+  expect(screen.getByText("No description yet.")).toBeTruthy();
+  expect(screen.queryByText(/Open project/)).toBeNull();
 });
 
-test("only one snippet is open at a time", async () => {
+test("checks hardware out directly from a project card", async () => {
   mockFetch(200, { projects: PROJECTS });
   renderPage();
   submitUserId("sydney");
-  await screen.findByRole("link", { name: "Robot Arm" });
 
-  fireEvent.click(screen.getByRole("button", { name: "Show details for Robot Arm" }));
-  fireEvent.click(screen.getByRole("button", { name: "Show details for Solo Project" }));
+  const project = (await screen.findByRole("heading", { name: "Robot Arm" })).closest("li");
+  const row = within(project).getByLabelText("HWSet1 controls");
+  fireEvent.change(within(row).getByLabelText(/quantity for hwset1/i), {
+    target: { value: "3" },
+  });
+  fireEvent.click(within(row).getByRole("button", { name: "Check Out" }));
 
-  expect(screen.queryByText("Senior design prototype")).toBeNull();
-  expect(screen.getByText("No description yet.")).toBeTruthy();
+  expect(within(row).getByText("Available: 97 / 100")).toBeTruthy();
+  expect(within(row).getByRole("status").textContent).toBe("Checked out 3 unit(s).");
 });
 
-test("clicking the project name goes to the project page", async () => {
+test("prevents checkout when hardware stock is insufficient", async () => {
   mockFetch(200, { projects: PROJECTS });
-  render(
-    <MemoryRouter
-      initialEntries={["/dashboard"]}
-      future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
-    >
-      <Routes>
-        <Route path="/dashboard" element={<HomePage />} />
-        <Route path="/projects/:projectId" element={<p>Project page</p>} />
-      </Routes>
-    </MemoryRouter>
-  );
+  renderPage();
   submitUserId("sydney");
 
-  const nameLink = await screen.findByRole("link", { name: "Robot Arm" });
-  expect(nameLink.getAttribute("href")).toBe("/projects/robot-arm");
+  const project = (await screen.findByRole("heading", { name: "Robot Arm" })).closest("li");
+  const row = within(project).getByLabelText("HWSet1 controls");
+  fireEvent.change(within(row).getByLabelText(/quantity for hwset1/i), {
+    target: { value: "101" },
+  });
+  fireEvent.click(within(row).getByRole("button", { name: "Check Out" }));
 
-  fireEvent.click(nameLink);
-  expect(screen.getByText("Project page")).toBeTruthy();
+  expect(within(row).getByRole("alert").textContent).toBe("Only 100 unit(s) are available.");
+  expect(within(row).getByText("Available: 100 / 100")).toBeTruthy();
+});
+
+test("checks hardware in and prevents returning too much", async () => {
+  mockFetch(200, { projects: PROJECTS });
+  renderPage();
+  submitUserId("sydney");
+
+  const project = (await screen.findByRole("heading", { name: "Robot Arm" })).closest("li");
+  const row = within(project).getByLabelText("HWSet1 controls");
+  const quantity = within(row).getByLabelText(/quantity for hwset1/i);
+
+  fireEvent.change(quantity, { target: { value: "6" } });
+  fireEvent.click(within(row).getByRole("button", { name: "Check In" }));
+  expect(within(row).getByRole("alert").textContent).toBe(
+    "This project can only check in 5 unit(s)."
+  );
+
+  fireEvent.change(quantity, { target: { value: "2" } });
+  jest.useFakeTimers();
+  fireEvent.click(within(row).getByRole("button", { name: "Check In" }));
+  expect(within(row).getByText("Available: 100 / 100")).toBeTruthy();
+  expect(within(row).getByRole("status").textContent).toBe("Checked in 2 unit(s).");
+
+  act(() => jest.advanceTimersByTime(2000));
+  expect(within(row).queryByRole("status")).toBeNull();
+  jest.useRealTimers();
+});
+
+test("shows already full when a project has no hardware to check in", async () => {
+  mockFetch(200, { projects: PROJECTS });
+  renderPage();
+  submitUserId("sydney");
+
+  const project = (await screen.findByRole("heading", { name: "Solo Project" })).closest("li");
+  const row = within(project).getByLabelText("HWSet1 controls");
+  fireEvent.click(within(row).getByRole("button", { name: "Check In" }));
+
+  expect(within(row).getByRole("alert").textContent).toBe("HWSet1 is already full.");
+});
+
+test("shows all other projects and joins one from the dashboard", async () => {
+  const availableProject = {
+    projectName: "Drone Team",
+    projectId: "drone-team",
+    description: "Autonomous drone project",
+    hwSets: {},
+    users: ["alice"],
+  };
+  const response = (body) => Promise.resolve({
+    ok: true,
+    json: () => Promise.resolve(body),
+  });
+  const fetchSpy = jest.spyOn(global, "fetch")
+    .mockImplementationOnce(() => response({ projects: PROJECTS }))
+    .mockImplementationOnce(() => response({ projects: [...PROJECTS, availableProject] }))
+    .mockImplementationOnce(() => response({
+      ...availableProject,
+      users: ["alice", "sydney"],
+    }));
+
+  renderPage();
+  submitUserId("sydney");
+
+  const availableList = await screen.findByRole("list", { name: "Available projects" });
+  const card = within(availableList).getByRole("heading", { name: "Drone Team" }).closest("li");
+  expect(
+    within(card).getAllByRole("button", { name: "Check Out" })
+      .every((button) => button.disabled)
+  ).toBe(true);
+
+  fireEvent.click(within(card).getByRole("button", { name: "Join" }));
+
+  await waitFor(() => {
+    expect(screen.queryByRole("list", { name: "Available projects" })).toBeNull();
+  });
+  expect(
+    within(screen.getByRole("list", { name: "My projects" }))
+      .getByRole("heading", { name: "Drone Team" })
+  ).toBeTruthy();
+  expect(fetchSpy.mock.calls[2][0]).toBe("/api/projects/drone-team/users");
 });
