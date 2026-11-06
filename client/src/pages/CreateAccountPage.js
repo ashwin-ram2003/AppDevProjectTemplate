@@ -7,7 +7,7 @@ function CreateAccountPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [message, setMessage] = useState("");
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     if (!userId || !password || !confirmPassword) {
@@ -20,7 +20,29 @@ function CreateAccountPage() {
       return;
     }
 
-    setMessage("Account information is valid.");
+    try {
+      const response = await fetch("/add_user", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: userId,
+          password: password,
+        }),
+      });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      setMessage(data.error || "Unable to create account.");
+      return;
+    }
+
+    setMessage("Account created successfully.");
+  } catch (error) {
+    setMessage("Unable to connect to the server.");
+}
   };
 
   return (
