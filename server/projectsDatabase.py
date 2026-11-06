@@ -28,6 +28,14 @@ class ProjectExistsError(Exception):
     """Raised when a project with the requested projectId already exists."""
 
 
+
+class ProjectNotFoundError(Exception):
+    """Raised when an operation targets a projectId that does not exist."""
+
+
+class AlreadyMemberError(Exception):
+    """Raised when a user tries to join a project they already belong to."""
+
 def serializeProject(document):
     """Convert a stored project document into the public API shape."""
     if document is None:
@@ -110,11 +118,59 @@ def createProject(collection, projectName, projectId, description="", creatorId=
     return serializeProject(document)
 
 
+def listUserProjects(collection, userId):
+    """Return every project the user belongs to (issue #6: View My Projects).
+
+    In MongoDB, {"users": userId} matches any project whose users list
+    contains userId. Projects come back sorted by name so the dashboard
+    order is stable. Raises ValueError if userId is missing.
+    """
+    if not isinstance(userId, str) or not userId.strip():
+        raise ValueError("User ID is required.")
+    userId = userId.strip()
+
+    projects = [
+        serializeProject(document)
+        for document in collection.find({"users": userId})
+    ]
+    return sorted(projects, key=lambda project: project["projectName"].lower())
+
 # --- Not yet implemented (see issues #5 and #18-#24) -----------------------
 
 def addUser(collection, projectId, userId):
-    """Add a user to the specified project (issue #5: Join a Project)."""
-    raise NotImplementedError
+    """Add a user to the specified project (issue #5: Join a Project).
+
+    The update only matches when the user is not already listed, so two
+    simultaneous joins can never add the same user twice. Returns the updated
+    project. Raises ValueError for missing input, ProjectNotFoundError for an
+    unknown projectId, and AlreadyMemberError if the user already belongs.
+    """
+    if not isinstance(userId, str) or not userId.strip():
+        raise ValueError("User ID is required.")
+    userId = userId.strip()
+
+    if not isinstance(projectId, str) or not projectId.strip():
+        raise ValueError("Project ID is required.")
+    projectId = projectId.strip()
+
+    result = collection.update_one(
+        {"projectId": projectId, "users": {"$ne": userId}},
+        {"$addToSet": {"users": userId}},
+    )
+
+    if result.matched_count == 0:
+        # Nothing matched: either the project is missing or the user is
+        # already a member. Look it up to tell the two apart.
+        if collection.find_one({"projectId": projectId}) is None:
+            raise ProjectNotFoundError(f"Project '{projectId}' was not found.")
+        raise AlreadyMemberError(
+            f"You are already a member of project '{projectId}'."
+        )
+
+    return queryProject(collection, projectId)
+
+
+# --- Not yet implemented (see issues #18-#24) ------------------------------
 
 
 def updateUsage(collection, projectId, hwSetName):

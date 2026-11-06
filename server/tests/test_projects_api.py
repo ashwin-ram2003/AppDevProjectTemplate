@@ -74,14 +74,14 @@ def test_create_project_trims_whitespace_and_allows_missing_description():
     assert response.get_json()["description"] == ""
 
 
-def test_create_project_without_user_starts_with_no_members():
+def test_create_project_without_user_returns_400():
     body = valid_body()
     del body["userId"]
 
     response = make_client().post("/api/projects", json=body)
 
-    assert response.status_code == 201
-    assert response.get_json()["users"] == []
+    assert response.status_code == 400
+    assert response.get_json()["error"] == "User ID is required."
 
 
 def test_duplicate_project_id_returns_409():

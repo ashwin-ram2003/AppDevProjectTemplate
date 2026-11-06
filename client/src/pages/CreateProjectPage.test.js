@@ -23,6 +23,9 @@ function mockFetch(status, body) {
 }
 
 function fillAndSubmit() {
+  fireEvent.change(screen.getByLabelText("Your User ID"), {
+  target: { value: "sydney" },
+  });
   fireEvent.change(screen.getByLabelText("Project Name"), {
     target: { value: "Robot Arm" },
   });
@@ -43,6 +46,8 @@ test("creates a project and shows a confirmation", async () => {
     "/api/projects",
     expect.objectContaining({ method: "POST" })
   );
+  const sentBody = JSON.parse(global.fetch.mock.calls[0][1].body);
+  expect(sentBody.userId).toBe("sydney");
 });
 
 test("shows the server's error when the ID is taken", async () => {
@@ -54,7 +59,7 @@ test("shows the server's error when the ID is taken", async () => {
   expect(await screen.findByRole("alert")).toHaveTextContent("already taken");
 });
 
-test("requires name and ID before calling the server", async () => {
+test("requires name, ID, and user ID before calling the server", async () => {
   jest.spyOn(global, "fetch");
   renderPage();
 

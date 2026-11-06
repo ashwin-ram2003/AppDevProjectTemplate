@@ -35,6 +35,8 @@ function LoginPage() {
         return;
       }
 
+      sessionStorage.setItem("dashboardUserId", data.user.userId);
+      
       navigate("/dashboard");
     } catch (error) {
       setMessage("Unable to connect to the server.");

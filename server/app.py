@@ -20,8 +20,16 @@ try:
         queryHardwareSet,
         requestSpace,
     )
-    from .projectsDatabase import ProjectExistsError, createProject, queryProject
-    from .usersDatabase import addUser, login as loginUser
+    from .projectsDatabase import (
+        AlreadyMemberError,
+        ProjectExistsError,
+        ProjectNotFoundError,
+        addUser as addUserToProject,
+        createProject,
+        listUserProjects,
+        queryProject,
+    )
+    from .usersDatabase import addUser, joinProject, login as loginUser, userExists
 except ImportError:  # Supports `python server/app.py` from the repository root.
     from dummyHardwareData import DUMMY_HARDWARE, InMemoryHardwareCollection
     from dummyProjectData import DUMMY_PROJECTS, InMemoryProjectCollection
@@ -32,8 +40,16 @@ except ImportError:  # Supports `python server/app.py` from the repository root.
         queryHardwareSet,
         requestSpace,
     )
-    from projectsDatabase import ProjectExistsError, createProject, queryProject
-    from usersDatabase import addUser, login as loginUser
+    from projectsDatabase import (
+        AlreadyMemberError,
+        ProjectExistsError,
+        ProjectNotFoundError,
+        addUser as addUserToProject,
+        createProject,
+        listUserProjects,
+        queryProject,
+    )
+    from usersDatabase import addUser, joinProject, login as loginUser, userExists
 
 
 load_dotenv(Path(__file__).resolve().parents[1] / ".env")
@@ -204,16 +220,34 @@ def create_app(
         if not isinstance(payload, dict):
             return jsonify({"error": "Request body must be a JSON object."}), 400
 
+        # The creator automatically becomes the project's first member.
+        # TODO: take the creator from the signed-in session once Sign In (#2)
+        # lands, instead of trusting the request body.
+        creator_id = payload.get("userId")
+        if not isinstance(creator_id, str) or not creator_id.strip():
+            return jsonify({"error": "User ID is required."}), 400
+        creator_id = creator_id.strip()
+
+        user_collection = app.extensions["user_collection"]
         try:
+            # Check the user first so we never create a project with no
+            # real owner. Dummy mode has no user collection, so skip it there.
+            if user_collection is not None and not userExists(
+                user_collection, creator_id
+            ):
+                return jsonify({"error": f"User '{creator_id}' was not found."}), 404
+
             project = createProject(
                 app.extensions["projects_collection"],
                 payload.get("projectName"),
                 payload.get("projectId"),
                 payload.get("description", ""),
-                # TODO: take the creator from the signed-in session once
-                # Sign In (#2) lands, instead of trusting the request body.
-                creatorId=payload.get("userId"),
+                creatorId=creator_id,
             )
+
+            # Keep the user's side in sync, same as joining a project.
+            if user_collection is not None:
+                joinProject(user_collection, creator_id, project["projectId"])
 
         except ValueError as error:
             return jsonify({"error": str(error)}), 400
@@ -234,6 +268,76 @@ def create_app(
         if project is None:
             return jsonify({"error": "Project not found."}), 404
         return jsonify(project)
+
+    @app.post("/api/projects/<string:project_id>/users")
+    def add_user_to_project_api(project_id):
+        """Add a user to a project (issue #5: Join a Project)."""
+        payload = request.get_json(silent=True)
+        if not isinstance(payload, dict):
+            return jsonify({"error": "Request body must be a JSON object."}), 400
+
+        # TODO: take the user from the signed-in session once Sign In (#2)
+        # lands, instead of trusting the request body.
+        user_id = payload.get("userId")
+        if not isinstance(user_id, str) or not user_id.strip():
+            return jsonify({"error": "User ID is required."}), 400
+        user_id = user_id.strip()
+
+        user_collection = app.extensions["user_collection"]
+        try:
+            # Without MongoDB there is no user collection, so local dummy
+            # mode skips the "is this a real user" check.
+            if user_collection is not None and not userExists(
+                user_collection, user_id
+            ):
+                return jsonify({"error": f"User '{user_id}' was not found."}), 404
+
+            project = addUserToProject(
+                app.extensions["projects_collection"], project_id, user_id
+            )
+
+            if user_collection is not None:
+                joinProject(user_collection, user_id, project["projectId"])
+        except ValueError as error:
+            return jsonify({"error": str(error)}), 400
+        except ProjectNotFoundError as error:
+            return jsonify({"error": str(error)}), 404
+        except AlreadyMemberError as error:
+            return jsonify({"error": str(error)}), 409
+        except PyMongoError:
+            return jsonify({"error": "Projects are temporarily unavailable."}), 503
+
+        return jsonify(project), 200
+
+        
+    # Existing team endpoints remain available for parallel development.
+    @app.get("/api/users/<string:user_id>/projects")
+    def get_user_projects_api(user_id):
+        """List every project a user belongs to (issue #6: View My Projects)."""
+        # TODO: take the user from the signed-in session once Sign In (#2)
+        # lands, instead of trusting the URL.
+        user_id = user_id.strip()
+        if not user_id:
+            return jsonify({"error": "User ID is required."}), 400
+
+        user_collection = app.extensions["user_collection"]
+        try:
+            # Dummy mode has no user collection, so skip the check there.
+            if user_collection is not None and not userExists(
+                user_collection, user_id
+            ):
+                return jsonify({"error": f"User '{user_id}' was not found."}), 404
+
+            projects = listUserProjects(
+                app.extensions["projects_collection"], user_id
+            )
+        except ValueError as error:
+            return jsonify({"error": str(error)}), 400
+        except PyMongoError:
+            return jsonify({"error": "Projects are temporarily unavailable."}), 503
+
+        return jsonify({"projects": projects}), 200
+
     
     # Existing team endpoints remain available for parallel development.
     @app.post("/login")

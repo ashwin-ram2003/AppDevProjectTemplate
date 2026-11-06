@@ -63,10 +63,22 @@ def login(collection, userId, password):
         "projects": user.get("projects", []),
     }
 
-# Function to add a user to a project
-def joinProject(client, userId, projectId):
-    # Add a user to a specified project
-    pass
+def userExists(collection, userId):
+    """Return True if a user with this userId is registered."""
+    return collection.find_one({"userId": userId}) is not None
+
+
+def joinProject(collection, userId, projectId):
+    """Record projectId in the user's projects list (no duplicates).
+
+    Call this after the project side has accepted the user, so both
+    documents agree on membership. Returns True if the user was found.
+    """
+    result = collection.update_one(
+        {"userId": userId},
+        {"$addToSet": {"projects": projectId}},
+    )
+    return result.matched_count == 1
 
 # Function to get the list of projects for a user
 def getUserProjectsList(client, userId):
