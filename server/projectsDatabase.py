@@ -16,8 +16,8 @@ Project = {
 }
 '''
 # Database and collection names
-DB_NAME = 'HardwareCheckout'
-COLLECTION = 'Projects'
+DB_NAME = 'Projects'
+COLLECTION = 'projects'
 
 # Helper function: gets the projects collection from client
 def getCollection(client):
@@ -38,8 +38,7 @@ def returnUnits(client, hwSetName, qty):
 # Function to query a project by its ID
 def queryProject(client, projectId):
     # Query and return a project from the database
-    db = client["HardwareCheckout"]
-    projects = db["Projects"]
+    projects = getCollection(client)
 
     # matching ID
     project = projects.find_one({"projectId" : projectId})
@@ -63,8 +62,7 @@ def hasMember(client, projectId, userId):
 # Function to create a new project
 def createProject(client, projectName, projectId, description, owner=None):
     # Create a new project in the database
-    db = client["HardwareCheckout"]
-    projects = db["Projects"]
+    projects = getCollection(client)
 
     # check if exists
     if queryProject(client, projectId) is not None:
@@ -88,8 +86,7 @@ def createProject(client, projectName, projectId, description, owner=None):
 # Function to add a user to a project
 def addUser(client, projectId, userId):
     # add user
-    db = client["HardwareCheckout"]
-    projects = db["Projects"]
+    projects = getCollection(client)
 
     # find project
     project = queryProject(client, projectId)

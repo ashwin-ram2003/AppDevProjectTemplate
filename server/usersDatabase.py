@@ -17,7 +17,7 @@ User = {
 # Function to add a new user
 def addUser(client, username, userId, password):
     # Add a new user to the database
-    users = client['HardwareCheckout']['Users']
+    users = client['Users']['users']
     
     # Prevent duplicate user IDs
     if users.find_one({'userId': userId}) is not None:
@@ -34,7 +34,7 @@ def addUser(client, username, userId, password):
 # Helper function to query a user by userId
 def __queryUser(client, userId):
     # Query and return a user from the database
-    users = client['HardwareCheckout']['Users']
+    users = client['Users']['users']
 
     return users.find_one({'userId': userId})
 
@@ -52,7 +52,7 @@ def login(client, userId, password):
 # Function to add a user to a project
 def joinProject(client, userId, projectId):
     # Add a user to a specified project
-    users = client['HardwareCheckout']['Users']
+    users = client['Users']['users']
 
     user = users.find_one({'userId': userId})
     if user is None:
@@ -82,7 +82,7 @@ def joinProject(client, userId, projectId):
 # Function to get the list of projects for a user
 def getUserProjectsList(client, userId):
     # Get and return the list of projects a user is part of
-    users = client['HardwareCheckout']['Users']
+    users = client['Users']['users']
     user = users.find_one({'userId': userId})
 
     if user is None:
@@ -92,7 +92,7 @@ def getUserProjectsList(client, userId):
 # Function to look up the display names for a list of userIds
 def getUsernames(client, userIds):
     # Return {userId: username} for the users that exist
-    users = client['HardwareCheckout']['Users']
+    users = client['Users']['users']
     found = users.find({'userId': {'$in': list(userIds)}}, {'userId': 1, 'username': 1})
     return {u['userId']: u['username'] for u in found}
 
