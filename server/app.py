@@ -101,8 +101,20 @@ def clean_doc(doc):
 
 # Helper function, cleans project documents and adds the owner's display name
 def with_owner_names(projects):
-    names = usersDB.getUsernames(client, {projectsDB.getOwner(p) for p in projects})
-    return [dict(clean_doc(p), ownerName=names.get(projectsDB.getOwner(p))) for p in projects]
+    user_ids = {projectsDB.getOwner(p) for p in projects}
+    for p in projects:
+        user_ids.update(p.get('users') or [])
+    names = usersDB.getUsernames(client, user_ids)
+
+    enriched = []
+    for p in projects:
+        doc = clean_doc(p)
+        doc['ownerName'] = names.get(projectsDB.getOwner(p))
+        doc['memberNames'] = [
+            names[uid] for uid in (p.get('users') or []) if uid in names
+        ]
+        enriched.append(doc)
+    return enriched
 
 # Helper function, parse a positive number from request data
 def parse_qty(value):
