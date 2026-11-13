@@ -1,0 +1,140 @@
+/* UT Austin palette: burnt orange is reserved for the primary action, the active
+   nav tab and low-stock warnings; charcoal carries the text and the nav bar. */
+:root {
+  --orange: #bf5700;
+  --orange-dark: #9c4700;
+  --charcoal: #333f48;
+  --charcoal-soft: #5d6870;
+  --limestone: #d6d2c4;
+  --limestone-dark: #a9a493;
+  --row-hover: #f4f3ef;
+  --ok: #3f7d2c;
+  --err: #b3261e;
+}
+
+/* Type scale: 13 / 15 / 18 / 24 / 32 */
+h1 { font-size: 32px; line-height: 1.15; font-weight: 700; letter-spacing: -0.01em; margin: 0 0 16px; }
+h2 { font-size: 18px; line-height: 1.3; font-weight: 600; margin: 0 0 12px; }
+h3 { font-size: 15px; font-weight: 600; margin: 0; }
+p { margin: 0 0 12px; }
+a { color: var(--charcoal); text-decoration-color: var(--limestone-dark); text-underline-offset: 3px; }
+a:hover { text-decoration-color: currentColor; }
+.muted { color: var(--charcoal-soft); }
+.small { font-size: 13px; }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Layout */
+.container { max-width: 1040px; margin: 0 auto; padding: 32px 16px 64px; }
+.container.narrow { max-width: 400px; padding-top: 72px; }
+.page-header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 24px; }
+.page-header h1 { margin: 0; }
+.with-sidebar { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 48px; align-items: start; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+.section { margin-bottom: 40px; }
+.back-link { display: inline-block; margin-bottom: 16px; font-size: 13px; }
+
+@media (max-width: 800px) {
+  .with-sidebar, .grid-2 { grid-template-columns: 1fr; }
+  .with-sidebar { gap: 16px; }
+  h1 { font-size: 26px; }
+}
+
+/* Bordered panel for forms and the checkout table. No shadows anywhere. */
+.card { background: #fff; border: 1px solid var(--limestone); border-radius: 4px; padding: 20px; margin-bottom: 24px; }
+.grid-2 > .card { margin-bottom: 0; }
+
+/* Modal */
+.modal-backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, .45); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 1000; }
+.modal-dialog { width: 100%; max-width: 420px; max-height: 90vh; overflow-y: auto; margin: 0; }
+.modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.modal-header h2 { margin: 0; }
+.modal-close { background: transparent; color: inherit; border: 0; font-size: 18px; padding: 4px 8px; }
+
+/* Nav bar */
+.navbar { background: var(--charcoal); color: #fff; }
+.navbar-inner { max-width: 1040px; margin: 0 auto; padding: 0 16px; display: flex; align-items: stretch; flex-wrap: wrap; column-gap: 32px; min-height: 56px; }
+.brand { display: flex; align-items: center; color: #fff; font-weight: 700; font-size: 20px; text-decoration: none; }
+.nav-links { display: flex; gap: 24px; }
+.nav-link { display: flex; align-items: center; color: rgba(255, 255, 255, .75); text-decoration: none; font-weight: 500; border-bottom: 3px solid transparent; padding-top: 3px; }
+.nav-link:hover { color: #fff; }
+.nav-link.active { color: #fff; border-bottom-color: var(--orange); }
+.nav-user { margin-left: auto; display: flex; align-items: center; gap: 16px; font-size: 13px; color: rgba(255, 255, 255, .75); padding: 10px 0; }
+.nav-user strong { color: #fff; font-weight: 600; }
+.navbar button.secondary { background: transparent; color: #fff; border-color: rgba(255, 255, 255, .4); padding: 5px 12px; }
+.navbar button.secondary:hover:not(:disabled) { background: transparent; border-color: #fff; color: #fff; }
+
+/* Tables: projects lists and checkout */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 10px 12px 10px 0; border-bottom: 1px solid var(--limestone); vertical-align: middle; }
+th:last-child, td:last-child { padding-right: 0; }
+thead th { font-size: 13px; font-weight: 600; color: var(--charcoal-soft); border-bottom: 1px solid var(--charcoal); }
+tbody th { font-weight: 600; }
+.project-table tbody tr { cursor: pointer; }
+.project-table tbody tr:hover { background: var(--row-hover); }
+.project-table td:first-child a { font-weight: 600; text-decoration: none; }
+.project-table tbody tr:hover td:first-child a { text-decoration: underline; }
+.empty { padding: 16px 0; border-top: 1px solid var(--charcoal); border-bottom: 1px solid var(--limestone); }
+.empty p { margin: 0; }
+
+/* Project details line on the checkout page */
+.details { display: flex; flex-wrap: wrap; gap: 4px 28px; margin: 0 0 24px; }
+.details div { display: flex; gap: 6px; }
+.details dt { color: var(--charcoal-soft); }
+.details dd { margin: 0; font-weight: 600; }
+
+/* Stock meter: charcoal normally, burnt orange when a set is running low */
+.meter { height: 4px; background: var(--limestone); }
+.meter > span { display: block; height: 100%; background: var(--charcoal); }
+.meter.low > span { background: var(--orange); }
+td .meter { width: 64px; margin: 6px 0 0 auto; }
+
+/* Hardware sidebar */
+.stock-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--charcoal); }
+.stock-list li { padding: 12px 0; border-bottom: 1px solid var(--limestone); }
+.stock-row { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; }
+.stock-count { font-variant-numeric: tabular-nums; }
+.stock-count strong { font-size: 24px; font-weight: 700; }
+
+/* Forms */
+.form-field { display: flex; flex-direction: column; margin-bottom: 16px; }
+.form-field label { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.form-field input, .form-field textarea, .qty-input { font: inherit; color: inherit; padding: 8px 10px; border: 1px solid var(--limestone-dark); border-radius: 4px; background: #fff; }
+.form-field textarea { resize: vertical; min-height: 72px; }
+.qty-input { width: 64px; padding: 6px 8px; font-variant-numeric: tabular-nums; }
+.form-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* Buttons */
+button, .button { display: inline-block; font: inherit; font-weight: 600; background: var(--orange); color: #fff; border: 1px solid var(--orange); border-radius: 4px; padding: 8px 16px; cursor: pointer; text-decoration: none; }
+button:hover:not(:disabled), .button:hover { background: var(--orange-dark); border-color: var(--orange-dark); color: #fff; }
+button.secondary, .button.secondary { background: #fff; color: var(--charcoal); border-color: var(--limestone-dark); }
+button.secondary:hover:not(:disabled), .button.secondary:hover { background: #fff; color: var(--charcoal); border-color: var(--charcoal); }
+button:disabled { opacity: .5; cursor: default; }
+:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
+.form-field input:focus-visible, .form-field textarea:focus-visible, .qty-input:focus-visible { outline-offset: 0; border-color: var(--charcoal); }
+.actions { display: flex; gap: 8px; justify-content: flex-end; }
+.actions button { padding: 6px 12px; white-space: nowrap; }
+.footnote { margin: 16px 0 0; }
+
+/* Checkout on phones: each set becomes a block. Name on top, the three numbers in
+   a row with their headings, then the request box and buttons. */
+@media (max-width: 600px) {
+  .card { padding: 16px; }
+  .checkout-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); }
+  .checkout-table tbody tr { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px 12px; padding: 14px 0; border-bottom: 1px solid var(--limestone); }
+  .checkout-table tbody tr:first-child { border-top: 1px solid var(--charcoal); }
+  .checkout-table th, .checkout-table td { border: 0; padding: 0; text-align: left; }
+  .checkout-table th[scope="row"] { grid-column: 1 / -1; }
+  .checkout-table td[data-label]::before { content: attr(data-label); display: block; font-size: 13px; color: var(--charcoal-soft); }
+  .checkout-table td .meter { margin: 6px 0 0; }
+  .checkout-table td:last-child { grid-column: span 2; }
+  .checkout-table .qty-input { width: 100%; box-sizing: border-box; }
+  .checkout-table .actions { justify-content: stretch; }
+  .checkout-table .actions button { flex: 1; }
+}
+
+/* Messages and helpers */
+.msg { margin: 12px 0 0; }
+.msg.ok { color: var(--ok); }
+.msg.err { color: var(--err); }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }

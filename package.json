@@ -1,0 +1,30 @@
+{
+  "name": "haas-client",
+  "version": "0.1.0",
+  "private": true,
+  "proxy": "http://127.0.0.1:5000",
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.30.6",
+    "react-scripts": "5.0.1",
+    "serve": "^14.2.4"
+  },
+  "scripts": {
+    "start": "serve -s client/build -l $PORT",
+    "build": "cd client && react-scripts build",
+    "dev": "cd client && react-scripts start"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}
