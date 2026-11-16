@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 
 import { createProject } from "../api/projectsApi";
 import Button from "../components/Button";
+import PageHeader from "../components/PageHeader";
 import { getSignedInUserId } from "../session";
 
 const EMPTY_FORM = { projectName: "", projectId: "", description: "" };
@@ -43,10 +44,7 @@ function CreateProjectPage() {
 
   return (
     <section className="checkout-page">
-      <header className="page-header">
-        <h1 className="page-title">Create Project</h1>
-        <Link className="page-header-link" to="/dashboard">Back to Dashboard</Link>
-      </header>
+      <PageHeader title="Create Project" />
 
       <div className="checkout-content">
         <nav className="dashboard-links">

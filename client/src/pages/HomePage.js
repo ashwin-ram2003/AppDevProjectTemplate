@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { fetchUserProjects } from "../api/projectsApi";
 import Button from "../components/Button";
 import JoinProjectForm from "../components/JoinProjectForm";
+import PageHeader from "../components/PageHeader";
 import ProjectCard from "../components/ProjectCard";
 import { getSignedInUserId, signOut } from "../session";
 
@@ -60,19 +61,20 @@ function HomePage() {
   return (
     <section className="checkout-page">
       {/* Title on the left, who is signed in on the right. */}
-      <header className="page-header">
-        <h1 className="page-title">My Dashboard</h1>
+      <PageHeader
+        title="My Dashboard"
+        actions={
+          <div className="dashboard-header-actions">
+            <p className="signed-in-as">
+              Signed in as <strong>{userId}</strong>
+            </p>
 
-        <div className="dashboard-header-actions">
-          <p className="signed-in-as">
-            Signed in as <strong>{userId}</strong>
-          </p>
-
-          <Button variant="primary" onClick={handleSignOut}>
-            Sign Out
-          </Button>
-        </div>
-      </header>
+            <Button variant="primary" onClick={handleSignOut}>
+              Sign Out
+            </Button>
+          </div>
+        }
+      />
 
       <div className="checkout-content">
         <p>Welcome to HardwareShare! Manage your projects and hardware resources.</p>

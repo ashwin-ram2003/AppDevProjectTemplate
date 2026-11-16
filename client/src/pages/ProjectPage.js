@@ -9,6 +9,7 @@ import {
 import { fetchProject, leaveProject } from "../api/projectsApi";
 import Button from "../components/Button";
 import HardwareSetRow from "../components/HardwareSetRow";
+import PageHeader from "../components/PageHeader";
 import { getSignedInUserId } from "../session";
 
 // Full page for one project, reached from /projects/:projectId.
@@ -107,18 +108,11 @@ function ProjectPage() {
 
   return (
     <section className="checkout-page">
-      <header className="page-header">
-        {/* Title with the project ID tucked right underneath it. */}
-        <div className="project-heading">
-          <h1 className="page-title">
-            {isMember ? project.projectName : "Project"}
-          </h1>
-          {isMember && (
-            <p className="project-id-line">Project ID: {project.projectId}</p>
-          )}
-        </div>
-        <Link className="page-header-link" to="/dashboard">Back to Dashboard</Link>
-      </header>
+      {/* Only members see the real name and ID; everyone else sees "Project". */}
+      <PageHeader
+        title={isMember ? project.projectName : "Project"}
+        subtitle={isMember ? `Project ID: ${project.projectId}` : null}
+      />
 
       <div className="checkout-content">
         {loading && <p className="loading-message">Loading project...</p>}

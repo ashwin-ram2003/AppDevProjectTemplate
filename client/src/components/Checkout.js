@@ -1,10 +1,10 @@
-import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 
 import { fetchHardwareDetail, fetchHardwareSets } from "../api/hardwareApi";
 import CheckoutForm from "./CheckoutForm";
 import CurrentHardware from "./CurrentHardware";
 import HardwareTable from "./HardwareTable";
+import PageHeader from "./PageHeader";
 
 function Checkout() {
   const [hardware, setHardware] = useState([]);
@@ -52,12 +52,7 @@ function Checkout() {
 
   return (
     <section className="checkout-page">
-      <header className="page-header">
-        <h1 className="page-title">Hardware Checkout</h1>
-        <Link className="page-header-link" to="/dashboard">
-          Back to Dashboard
-        </Link>
-      </header>
+      <PageHeader title="Hardware Checkout" />
       <div className="checkout-content">
         <section aria-label="Hardware inventory">
           {loading && <p className="loading-message">Loading hardware inventory…</p>}
