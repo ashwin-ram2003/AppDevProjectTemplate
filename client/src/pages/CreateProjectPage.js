@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 import { createProject } from "../api/projectsApi";
 import Button from "../components/Button";
@@ -9,6 +9,7 @@ import { getSignedInUserId } from "../session";
 const EMPTY_FORM = { projectName: "", projectId: "", description: "" };
 
 function CreateProjectPage() {
+  const navigate = useNavigate();
   const [form, setForm] = useState(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -47,10 +48,6 @@ function CreateProjectPage() {
       <PageHeader title="Create Project" />
 
       <div className="checkout-content">
-        <nav className="dashboard-links">
-          <Link to="/hardware">Hardware Checkout (Demo)</Link>
-        </nav>
-
         <form className="project-form" onSubmit={handleSubmit}>
           <div className="field-row">
             <label htmlFor="project-name">Project Name</label>
@@ -97,9 +94,21 @@ function CreateProjectPage() {
 
           {error && <p className="error-banner" role="alert">{error}</p>}
           {createdProject && (
-            <p className="request-message" role="status">
-              Created "{createdProject.projectName}" (Project ID: {createdProject.projectId}).
-            </p>
+            <div className="project-created">
+              <p className="request-message" role="status">
+                Created "{createdProject.projectName}" (Project ID: {createdProject.projectId}).
+              </p>
+              {/* Only shows after the server accepts the project, so the
+                  ID is guaranteed to exist and the user is already a member. */}
+              <Button
+                variant="primary"
+                onClick={() =>
+                  navigate(`/projects/${encodeURIComponent(createdProject.projectId)}`)
+                }
+              >
+                Go to Project
+              </Button>
+            </div>
           )}
         </form>
       </div>

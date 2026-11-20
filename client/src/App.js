@@ -1,7 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import RequireSignIn from "./components/RequireSignIn";
 
-import Checkout from "./components/Checkout";
 import HomePage from "./pages/HomePage";
 import CreateAccountPage from "./pages/CreateAccountPage";
 import CreateProjectPage from "./pages/CreateProjectPage";
@@ -21,14 +20,6 @@ function App() {
             element={
               <RequireSignIn>
                 <HomePage />
-              </RequireSignIn>
-            }
-          />
-          <Route
-            path="/hardware"
-            element={
-              <RequireSignIn>
-                <Checkout />
               </RequireSignIn>
             }
           />
