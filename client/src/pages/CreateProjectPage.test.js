@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 
 import CreateProjectPage from "./CreateProjectPage";
 
@@ -82,4 +82,35 @@ test("links back to the dashboard", () => {
   renderPage();
 
   expect(screen.getByRole("link", { name: "Back to Dashboard" })).toHaveAttribute("href", "/dashboard");
+});
+test("shows a Go to Project button after the project is created", async () => {
+  mockFetch(201, { projectName: "Robot Arm", projectId: "robot-arm" });
+  render(
+    <MemoryRouter
+      initialEntries={["/projects/new"]}
+      future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+    >
+      <Routes>
+        <Route path="/projects/new" element={<CreateProjectPage />} />
+        <Route path="/projects/:projectId" element={<p>Project page for robot-arm</p>} />
+      </Routes>
+    </MemoryRouter>
+  );
+
+  fillAndSubmit();
+
+  const goButton = await screen.findByRole("button", { name: "Go to Project" });
+  fireEvent.click(goButton);
+
+  expect(await screen.findByText("Project page for robot-arm")).toBeInTheDocument();
+});
+
+test("does not show Go to Project when creation fails", async () => {
+  mockFetch(409, { error: "Project ID 'robot-arm' is already taken." });
+  renderPage();
+
+  fillAndSubmit();
+
+  await screen.findByRole("alert");
+  expect(screen.queryByRole("button", { name: "Go to Project" })).toBeNull();
 });
